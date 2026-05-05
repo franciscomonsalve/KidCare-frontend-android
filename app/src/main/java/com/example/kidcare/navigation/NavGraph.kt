@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kidcare.ui.screens.ChatbotScreen
 import com.example.kidcare.ui.screens.HomeScreen
 import com.example.kidcare.ui.screens.LoginScreen
 import com.example.kidcare.ui.screens.RegistroScreen
@@ -48,9 +49,11 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Rutas.BITACORA) {
             // BitacoraScreen(navController)
         }
-        composable(Rutas.CHATBOT) {
-            // ChatbotScreen(navController)
+        composable(Rutas.CHATBOT) { backStackEntry ->
+            val menorId = backStackEntry.arguments?.getString("menorId") ?: ""
+            ChatbotScreen(navController)
         }
+
         composable(Rutas.ENLACE) {
             // EnlaceScreen(navController)
         }
