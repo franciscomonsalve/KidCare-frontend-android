@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kidcare.ui.screens.HomeScreen
 import com.example.kidcare.ui.screens.LoginScreen
 import com.example.kidcare.ui.screens.RegistroScreen
 import com.example.kidcare.ui.screens.SplashScreen
@@ -38,7 +39,8 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
 
         }
         composable(Rutas.HOME) {
-            // HomeScreen(navController)
+            HomeScreen(navController)
+
         }
         composable(Rutas.AGREGAR_MENOR) {
             // AgregarMenorScreen(navController)
