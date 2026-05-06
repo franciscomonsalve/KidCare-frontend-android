@@ -42,8 +42,8 @@ fun HomeScreen(navController: NavController) {
     var menorSeleccionado by remember { mutableStateOf("1") }
 
     val menores = listOf(
-        Menor("1", "Sofía",  "5 años", "👧", 12),
-        Menor("2", "Mateo",  "3 años", "👦",  8),
+        Menor("1", "Amalia",  "5 años", "👧", 12),
+        Menor("2", "Mateo",  "10 años", "👦",  8),
     )
 
     val menor = menores.find { it.id == menorSeleccionado } ?: menores.first()

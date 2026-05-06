@@ -187,6 +187,7 @@ fun PerfilScreen(navController: NavController) {
                         Pair("👧", "Sofía · 5 años"),
                         Pair("👦", "Mateo · 3 años"),
                     ).forEach { (emoji, nombre) ->
+                        // Sofía
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -201,18 +202,99 @@ fun PerfilScreen(navController: NavController) {
                                     .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(emoji, fontSize = 18.sp)
+                                Text("👧", fontSize = 18.sp)
                             }
                             Text(
-                                text = nombre,
+                                text = "Amalia · 5 años",
                                 fontSize = 14.sp,
                                 color = Color(0xFF0F172A),
                                 modifier = Modifier.weight(1f)
                             )
                             Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
                         }
-                        if (nombre != "Mateo · 3 años") {
-                            Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
+
+                        Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
+
+// Delegados de Sofía
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { navController.navigate("delegados/1") }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("👥", fontSize = 18.sp)
+                            }
+                            Text(
+                                text = "Delegados de Amalia",
+                                fontSize = 14.sp,
+                                color = Color(0xFF0F172A),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
+                        }
+
+                        Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
+
+                        // Mateo
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("👦", fontSize = 18.sp)
+                            }
+                            Text(
+                                text = "Mateo · 10 años",
+                                fontSize = 14.sp,
+                                color = Color(0xFF0F172A),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
+                        }
+
+                        Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
+
+                        // Delegados de Mateo
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { navController.navigate("delegados/2") }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("👥", fontSize = 18.sp)
+                            }
+                            Text(
+                                text = "Delegados de Mateo",
+                                fontSize = 14.sp,
+                                color = Color(0xFF0F172A),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
                         }
                     }
                 }

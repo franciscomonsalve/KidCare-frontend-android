@@ -5,10 +5,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.kidcare.ui.screens.AgregarMenorScreen
 import com.example.kidcare.ui.screens.BitacoraScreen
 import com.example.kidcare.ui.screens.ChatbotScreen
+import com.example.kidcare.ui.screens.DelegadoScreen
 import com.example.kidcare.ui.screens.EnlaceScreen
 import com.example.kidcare.ui.screens.HomeScreen
+import com.example.kidcare.ui.screens.InvitarDelegadoScreen
 import com.example.kidcare.ui.screens.LoginScreen
 import com.example.kidcare.ui.screens.PerfilScreen
 import com.example.kidcare.ui.screens.RegistroScreen
@@ -24,6 +27,12 @@ object Rutas {
     const val CHATBOT       = "chatbot/{menorId}"
     const val ENLACE        = "enlace/{menorId}"
     const val CONFIGURACION = "configuracion"
+
+    const val DELEGADOS      = "delegados/{menorId}"
+
+    const val INVITAR_DELEGADO = "invitar_delegado/{menorId}"
+
+    const val REGISTRO_DELEGADO = "registro_delegado"
 }
 
 @Composable
@@ -47,7 +56,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
 
         }
         composable(Rutas.AGREGAR_MENOR) {
-            // AgregarMenorScreen(navController)
+            AgregarMenorScreen(navController)
         }
         composable(Rutas.BITACORA) { backStackEntry ->
             val menorId = backStackEntry.arguments?.getString("menorId") ?: ""
@@ -67,5 +76,14 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Rutas.CONFIGURACION) {
             PerfilScreen(navController)
         }
+        composable(Rutas.DELEGADOS) { backStackEntry ->
+            val menorId = backStackEntry.arguments?.getString("menorId") ?: ""
+            DelegadoScreen(navController, menorId)
+        }
+        composable(Rutas.INVITAR_DELEGADO) { backStackEntry ->
+            val menorId = backStackEntry.arguments?.getString("menorId") ?: ""
+            InvitarDelegadoScreen(navController)
+        }
+
     }
 }

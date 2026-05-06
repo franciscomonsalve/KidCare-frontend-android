@@ -191,6 +191,37 @@ fun LoginScreen(navController: NavController) {
                     ) {
                         Text("Crear cuenta", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+
+// Separador
+                    Text(
+                        text = "¿Eres delegado?",
+                        fontSize = 12.sp,
+                        color = Color(0xFF9CA3AF),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+// Botón ingresar como delegado
+                    OutlinedButton(
+                        onClick = { navController.navigate(Rutas.REGISTRO_DELEGADO) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF059669)
+                        ),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = Brush.linearGradient(
+                                listOf(Color(0xFF059669), Color(0xFF059669))
+                            )
+                        )
+                    ) {
+                        Text("Ingresar como delegado", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
