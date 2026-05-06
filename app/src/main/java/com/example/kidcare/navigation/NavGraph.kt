@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kidcare.ui.screens.AgregarMenorScreen
 import com.example.kidcare.ui.screens.BitacoraScreen
+import com.example.kidcare.ui.screens.CambiarContrasenaScreen
 import com.example.kidcare.ui.screens.ChatbotScreen
 import com.example.kidcare.ui.screens.DelegadoScreen
 import com.example.kidcare.ui.screens.EnlaceScreen
@@ -33,6 +34,9 @@ object Rutas {
     const val INVITAR_DELEGADO = "invitar_delegado/{menorId}"
 
     const val REGISTRO_DELEGADO = "registro_delegado"
+
+    const val CAMBIAR_CONTRASENA = "cambiar_contrasena"
+
 }
 
 @Composable
@@ -83,6 +87,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Rutas.INVITAR_DELEGADO) { backStackEntry ->
             val menorId = backStackEntry.arguments?.getString("menorId") ?: ""
             InvitarDelegadoScreen(navController)
+        }
+        composable(Rutas.CAMBIAR_CONTRASENA) {
+            CambiarContrasenaScreen(navController)
         }
 
     }

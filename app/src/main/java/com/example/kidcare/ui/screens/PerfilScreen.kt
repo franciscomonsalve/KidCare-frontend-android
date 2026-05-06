@@ -129,14 +129,14 @@ fun PerfilScreen(navController: NavController) {
             ) {
                 Column {
                     listOf(
-                        Triple("👤", "Editar perfil", true),
-                        Triple("🔒", "Cambiar contraseña", true),
-                        Triple("🔔", "Notificaciones", true),
-                    ).forEach { (emoji, titulo, mostrarChevron) ->
+                        Triple("👤", "Editar perfil",       Rutas.CONFIGURACION),
+                        Triple("🔒", "Cambiar contraseña",  Rutas.CAMBIAR_CONTRASENA),
+                        Triple("🔔", "Notificaciones",      Rutas.CONFIGURACION),
+                    ).forEach { (emoji, titulo, ruta) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { }
+                                .clickable { navController.navigate(ruta) }
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -215,7 +215,7 @@ fun PerfilScreen(navController: NavController) {
 
                         Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
 
-// Delegados de Sofía
+                        // Delegados de Amalia
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
