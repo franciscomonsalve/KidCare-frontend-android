@@ -140,18 +140,13 @@ fun LoginScreen(navController: NavController) {
                     )
 
                     // Olvidé contraseña
-                    Text(
-                        text = "¿Olvidaste tu contraseña?",
-                        fontSize = 12.sp,
-                        color = azulKidCare,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
+                    TextButton(onClick = { navController.navigate(Rutas.RECUPERAR_CONTRASENA) }) {
+                        Text(
+                            text = "¿Olvidaste tu contraseña?",
+                            color = azulKidCare,
+                            fontSize = 14.sp
+                        )
+                    }
 
                     // Botón ingresar
                     Button(

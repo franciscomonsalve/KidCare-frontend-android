@@ -15,6 +15,7 @@ import com.example.kidcare.ui.screens.HomeScreen
 import com.example.kidcare.ui.screens.InvitarDelegadoScreen
 import com.example.kidcare.ui.screens.LoginScreen
 import com.example.kidcare.ui.screens.PerfilScreen
+import com.example.kidcare.ui.screens.RecuperarContrasenaScreen
 import com.example.kidcare.ui.screens.RegistroScreen
 import com.example.kidcare.ui.screens.SplashScreen
 
@@ -36,6 +37,8 @@ object Rutas {
     const val REGISTRO_DELEGADO = "registro_delegado"
 
     const val CAMBIAR_CONTRASENA = "cambiar_contrasena"
+
+    const val RECUPERAR_CONTRASENA = "recuperar_contrasena"
 
 }
 
@@ -90,6 +93,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         }
         composable(Rutas.CAMBIAR_CONTRASENA) {
             CambiarContrasenaScreen(navController)
+        }
+        composable(Rutas.RECUPERAR_CONTRASENA) {
+            RecuperarContrasenaScreen(navController)
         }
 
     }
