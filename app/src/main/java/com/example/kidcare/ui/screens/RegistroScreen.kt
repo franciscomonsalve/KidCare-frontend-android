@@ -32,6 +32,10 @@ fun RegistroScreen(navController: NavController) {
     var contrasena  by remember { mutableStateOf("") }
     var confirmar   by remember { mutableStateOf("") }
     var aceptoTerminos by remember { mutableStateOf(false) }
+    var nombre    by remember { mutableStateOf("") }
+    var telefono  by remember { mutableStateOf("") }
+
+
 
     Column(
         modifier = Modifier
@@ -148,6 +152,48 @@ fun RegistroScreen(navController: NavController) {
             modifier = Modifier.padding(24.dp)
         ) {
 
+            // Nombre completo
+            Text(
+                text = "NOMBRE COMPLETO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280),
+                letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                placeholder = { Text("María González", color = Color(0xFF9CA3AF)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+// Teléfono
+            Text(
+                text = "NÚMERO DE TELÉFONO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280),
+                letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+            OutlinedTextField(
+                value = telefono,
+                onValueChange = { telefono = it },
+                placeholder = { Text("+56 9 1234 5678", color = Color(0xFF9CA3AF)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                )
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
             // Correo
             Text(
                 text = "CORREO ELECTRÓNICO",

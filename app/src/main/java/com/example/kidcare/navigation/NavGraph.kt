@@ -10,6 +10,7 @@ import com.example.kidcare.ui.screens.ChatbotScreen
 import com.example.kidcare.ui.screens.EnlaceScreen
 import com.example.kidcare.ui.screens.HomeScreen
 import com.example.kidcare.ui.screens.LoginScreen
+import com.example.kidcare.ui.screens.PerfilScreen
 import com.example.kidcare.ui.screens.RegistroScreen
 import com.example.kidcare.ui.screens.SplashScreen
 
@@ -64,7 +65,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
 
         }
         composable(Rutas.CONFIGURACION) {
-            // ConfiguracionScreen(navController)
+            PerfilScreen(navController)
         }
     }
 }
