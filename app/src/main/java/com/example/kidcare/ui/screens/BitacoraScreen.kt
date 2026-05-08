@@ -1,6 +1,5 @@
 package com.example.kidcare.ui.screens
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,66 +15,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-
-data class Observacion(
-    val id: String,
-    val contenido: String,
-    val fecha: String,
-    val hora: String,
-    val origen: String // CHATBOT o MANUAL
-)
+import com.example.kidcare.ui.viewmodel.HistorialViewModel
 
 @Composable
-fun BitacoraScreen(navController: NavController) {
-
+fun BitacoraScreen(
+    navController: NavController,
+    menorId: Int = 0,
+    historialViewModel: HistorialViewModel = viewModel()
+) {
     val azulKidCare = Color(0xFF2563EB)
-    val azulOscuro  = Color(0xFF1E3A8A)
+    val azulOscuro = Color(0xFF1E3A8A)
 
-    val observaciones = listOf(
-        Observacion("1", "El menor presentó fiebre de 38.5°C. Un familiar lo acompañó durante la noche.", "Hoy", "14:30", "CHATBOT"),
-        Observacion("2", "El menor presentó tos seca y leve congestión nasal durante la mañana.", "Ayer", "09:15", "MANUAL"),
-        Observacion("3", "El menor no quiso comer durante el almuerzo. Estuvo irritable en la tarde.", "Hace 3 días", "20:00", "CHATBOT"),
-        Observacion("4", "El menor durmió bien toda la noche sin interrupciones.", "Hace 4 días", "08:00", "MANUAL"),
-        Observacion("5", "El menor presentó leve dolor de garganta. Se le dio agua tibia.", "Hace 5 días", "17:30", "CHATBOT"),
-    )
+    val interacciones by historialViewModel.interacciones.collectAsState()
+    val loading by historialViewModel.loading.collectAsState()
+
+    LaunchedEffect(menorId) {
+        if (menorId > 0) historialViewModel.cargarInteracciones(menorId)
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF2F5FB))
     ) {
-
-        // Header
         item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(azulOscuro, azulKidCare)
-                        )
-                    )
+                    .background(brush = Brush.linearGradient(colors = listOf(azulOscuro, azulKidCare)))
                     .padding(top = 48.dp, bottom = 20.dp, start = 16.dp, end = 16.dp)
             ) {
                 Column {
                     TextButton(
                         onClick = { navController.popBackStack() },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = Color.White.copy(alpha = 0.8f)
-                        )
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
                     ) {
                         Text("← Volver", fontSize = 14.sp)
                     }
                     Text(
-                        text = "Bitácora · Sofía",
+                        text = "Bitácora de observaciones",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                     Text(
-                        text = "${observaciones.size} observaciones registradas",
+                        text = "${interacciones.size} observaciones registradas",
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.65f),
                         modifier = Modifier.padding(start = 8.dp, top = 4.dp)
@@ -93,10 +80,10 @@ fun BitacoraScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 listOf(
-                    Triple("${observaciones.size}", "Total", Color(0xFFF2F5FB)),
-                    Triple("${observaciones.count { it.origen == "CHATBOT" }}", "Chatbot", Color(0xFFEFF6FF)),
-                    Triple("${observaciones.count { it.origen == "MANUAL" }}", "Manual", Color(0xFFECFDF5)),
-                ).forEach { (valor, label, fondo) ->
+                    Triple("${interacciones.size}", "Total", Color.White),
+                    Triple("${interacciones.count { it.origen == "movil" || it.origen == "CHATBOT" }}", "Chatbot", Color.White),
+                    Triple("${interacciones.count { it.editado == true }}", "Editadas", Color.White),
+                ).forEach { (valor, label, _) ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -123,7 +110,6 @@ fun BitacoraScreen(navController: NavController) {
             }
         }
 
-        // Lista de observaciones
         item {
             Text(
                 text = "OBSERVACIONES",
@@ -135,86 +121,71 @@ fun BitacoraScreen(navController: NavController) {
             )
         }
 
-        items(observaciones) { obs ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 5.dp)
-                    .background(Color.White, shape = RoundedCornerShape(14.dp))
-                    .padding(15.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                // Punto indicador
-                Box(
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .size(8.dp)
-                        .background(
-                            if (obs.origen == "CHATBOT") azulKidCare else Color(0xFF059669),
-                            shape = RoundedCornerShape(50)
-                        )
-                )
-
-                Column(modifier = Modifier.weight(1f)) {
-                    // Fecha y badge
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "${obs.fecha} · ${obs.hora}",
-                            fontSize = 11.sp,
-                            color = Color(0xFF6B7280)
-                        )
-                        // Badge origen
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    if (obs.origen == "CHATBOT") Color(0xFFEFF6FF)
-                                    else Color(0xFFECFDF5),
-                                    shape = RoundedCornerShape(20.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = obs.origen,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (obs.origen == "CHATBOT") azulKidCare
-                                else Color(0xFF059669)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Contenido
+        if (loading) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = azulKidCare)
+                }
+            }
+        } else if (interacciones.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        text = obs.contenido,
-                        fontSize = 13.sp,
-                        color = Color(0xFF0F172A),
-                        lineHeight = 20.sp
+                        text = "Sin observaciones registradas aún.",
+                        color = Color(0xFF9CA3AF),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        } else {
+            items(interacciones) { obs ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 5.dp)
+                        .background(Color.White, shape = RoundedCornerShape(14.dp))
+                        .padding(15.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .size(8.dp)
+                            .background(azulKidCare, shape = RoundedCornerShape(50))
                     )
 
-                    // Acciones
-                    Row(
-                        modifier = Modifier.padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = obs.fecha ?: "—",
+                                fontSize = 11.sp,
+                                color = Color(0xFF6B7280)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = obs.origen.uppercase(),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = azulKidCare
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
                         Text(
-                            text = "Editar",
-                            fontSize = 12.sp,
-                            color = azulKidCare,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { }
-                        )
-                        Text(
-                            text = "Eliminar",
-                            fontSize = 12.sp,
-                            color = Color(0xFFDC2626),
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { }
+                            text = obs.observaciones,
+                            fontSize = 13.sp,
+                            color = Color(0xFF0F172A),
+                            lineHeight = 20.sp
                         )
                     }
                 }

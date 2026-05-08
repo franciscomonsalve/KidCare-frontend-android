@@ -1,6 +1,5 @@
 package com.example.kidcare.ui.screens
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,23 +15,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.kidcare.ui.viewmodel.ChatbotViewModel
 import kotlinx.coroutines.launch
 
-data class Mensaje(
-    val texto: String,
-    val esUsuario: Boolean
-)
+data class Mensaje(val texto: String, val esUsuario: Boolean)
 
 @Composable
-fun ChatbotScreen(navController: NavController) {
-
+fun ChatbotScreen(
+    navController: NavController,
+    menorId: Int = 0,
+    chatbotViewModel: ChatbotViewModel = viewModel()
+) {
     val azulKidCare = Color(0xFF2563EB)
-    val fondoChat   = Color(0xFFF5F7FF)
+    val fondoChat = Color(0xFFF5F7FF)
 
     var inputTexto by remember { mutableStateOf("") }
-    val listState   = rememberLazyListState()
-    val scope       = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    val guardado by chatbotViewModel.guardado.collectAsState()
 
     val mensajes = remember {
         mutableStateListOf(
@@ -43,29 +46,33 @@ fun ChatbotScreen(navController: NavController) {
         )
     }
 
+    LaunchedEffect(guardado) {
+        if (guardado == true) {
+            chatbotViewModel.resetGuardado()
+            mensajes.add(Mensaje("✅ Observación guardada correctamente.", esUsuario = false))
+            scope.launch { listState.animateScrollToItem(mensajes.size - 1) }
+        } else if (guardado == false) {
+            chatbotViewModel.resetGuardado()
+            mensajes.add(Mensaje("⚠️ No se pudo guardar. Verifica tu conexión.", esUsuario = false))
+            scope.launch { listState.animateScrollToItem(mensajes.size - 1) }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(fondoChat)
     ) {
-
-        // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color(0xFF1E3A8A), azulKidCare)
-                    )
-                )
+                .background(brush = Brush.linearGradient(colors = listOf(Color(0xFF1E3A8A), azulKidCare)))
                 .padding(top = 48.dp, bottom = 12.dp, start = 16.dp, end = 16.dp)
         ) {
             Column {
                 TextButton(
                     onClick = { navController.popBackStack() },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color.White.copy(alpha = 0.8f)
-                    )
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
                 ) {
                     Text("← Volver", fontSize = 14.sp)
                 }
@@ -77,7 +84,7 @@ fun ChatbotScreen(navController: NavController) {
                     modifier = Modifier.padding(start = 8.dp)
                 )
                 Text(
-                    text = "Asistente de registro · Sofía",
+                    text = "Asistente de registro",
                     fontSize = 12.sp,
                     color = Color.White.copy(alpha = 0.65f),
                     modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
@@ -85,7 +92,6 @@ fun ChatbotScreen(navController: NavController) {
             }
         }
 
-        // Barra de progreso (3 pasos)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -106,7 +112,6 @@ fun ChatbotScreen(navController: NavController) {
             }
         }
 
-        // Aviso disclaimer
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +131,6 @@ fun ChatbotScreen(navController: NavController) {
             )
         }
 
-        // Mensajes
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -137,7 +141,6 @@ fun ChatbotScreen(navController: NavController) {
         ) {
             items(mensajes) { mensaje ->
                 if (mensaje.esUsuario) {
-                    // Mensaje usuario
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
@@ -145,19 +148,13 @@ fun ChatbotScreen(navController: NavController) {
                         Box(
                             modifier = Modifier
                                 .background(azulKidCare, shape = RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp))
-                                .padding(11.dp, 11.dp)
+                                .padding(11.dp)
                                 .fillMaxWidth(0.78f)
                         ) {
-                            Text(
-                                text = mensaje.texto,
-                                fontSize = 13.sp,
-                                color = Color.White,
-                                lineHeight = 20.sp
-                            )
+                            Text(text = mensaje.texto, fontSize = 13.sp, color = Color.White, lineHeight = 20.sp)
                         }
                     }
                 } else {
-                    // Mensaje bot
                     Column {
                         Box(
                             modifier = Modifier
@@ -170,10 +167,7 @@ fun ChatbotScreen(navController: NavController) {
                         Spacer(modifier = Modifier.height(5.dp))
                         Box(
                             modifier = Modifier
-                                .background(
-                                    Color.White,
-                                    shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)
-                                )
+                                .background(Color.White, shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp))
                                 .padding(11.dp)
                                 .fillMaxWidth(0.78f)
                         ) {
@@ -189,7 +183,6 @@ fun ChatbotScreen(navController: NavController) {
             }
         }
 
-        // Input de texto
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -201,7 +194,7 @@ fun ChatbotScreen(navController: NavController) {
             OutlinedTextField(
                 value = inputTexto,
                 onValueChange = { inputTexto = it },
-                placeholder = { Text("Escribe tu respuesta...", fontSize = 13.sp) },
+                placeholder = { Text("Escribe tu observación...", fontSize = 13.sp) },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(22.dp),
                 singleLine = true,
@@ -211,7 +204,6 @@ fun ChatbotScreen(navController: NavController) {
                 )
             )
 
-            // Botón enviar
             Box(
                 modifier = Modifier
                     .size(38.dp)
@@ -220,19 +212,14 @@ fun ChatbotScreen(navController: NavController) {
             ) {
                 IconButton(
                     onClick = {
-                        if (inputTexto.isNotBlank()) {
-                            mensajes.add(Mensaje(inputTexto, esUsuario = true))
-                            val respuesta = inputTexto
+                        val texto = inputTexto.trim()
+                        if (texto.isNotBlank()) {
+                            mensajes.add(Mensaje(texto, esUsuario = true))
                             inputTexto = ""
-                            // Respuesta automática del bot
+                            // Save to API
+                            chatbotViewModel.guardarObservacion(menorId, texto)
                             scope.launch {
-                                kotlinx.coroutines.delay(800)
-                                mensajes.add(
-                                    Mensaje(
-                                        "Entendido. ¿Puedes darme más detalles sobre cuándo comenzó?",
-                                        esUsuario = false
-                                    )
-                                )
+                                kotlinx.coroutines.delay(300)
                                 listState.animateScrollToItem(mensajes.size - 1)
                             }
                         }

@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -16,16 +17,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.R
+import com.example.kidcare.data.preferences.SessionManager
 import com.example.kidcare.navigation.Rutas
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavController) {
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        delay(3000)
-        navController.navigate(Rutas.LOGIN) {
-            popUpTo(Rutas.SPLASH) { inclusive = true }
+        delay(2000)
+        val sessionManager = SessionManager(context)
+        if (sessionManager.isLoggedIn()) {
+            navController.navigate(Rutas.HOME) {
+                popUpTo(Rutas.SPLASH) { inclusive = true }
+            }
+        } else {
+            navController.navigate(Rutas.LOGIN) {
+                popUpTo(Rutas.SPLASH) { inclusive = true }
+            }
         }
     }
 
@@ -34,10 +44,7 @@ fun SplashScreen(navController: NavController) {
             .fillMaxSize()
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF0F1A3D),
-                        Color(0xFF2563EB)
-                    )
+                    colors = listOf(Color(0xFF0F1A3D), Color(0xFF2563EB))
                 )
             ),
         contentAlignment = Alignment.Center
@@ -51,18 +58,14 @@ fun SplashScreen(navController: NavController) {
                 contentDescription = "KidCare Logo",
                 modifier = Modifier.size(140.dp)
             )
-
             Spacer(modifier = Modifier.height(24.dp))
-
             Text(
                 text = "KidCare",
                 fontSize = 46.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-
             Spacer(modifier = Modifier.height(10.dp))
-
             Text(
                 text = "Bitácora de salud pediátrica",
                 fontSize = 14.sp,

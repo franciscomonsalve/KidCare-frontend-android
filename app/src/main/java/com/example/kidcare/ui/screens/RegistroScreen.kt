@@ -1,6 +1,5 @@
 package com.example.kidcare.ui.screens
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,23 +14,46 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.viewmodel.AuthState
+import com.example.kidcare.ui.viewmodel.AuthViewModel
 
 @Composable
-fun RegistroScreen(navController: NavController) {
-    var verContrasena  by remember { mutableStateOf(false) }
-    var verConfirmar   by remember { mutableStateOf(false) }
+fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
+    var verContrasena by remember { mutableStateOf(false) }
+    var verConfirmar by remember { mutableStateOf(false) }
     val azulKidCare = Color(0xFF2563EB)
-    val azulOscuro  = Color(0xFF1E3A8A)
+    val azulOscuro = Color(0xFF1E3A8A)
 
-    var correo      by remember { mutableStateOf("") }
-    var contrasena  by remember { mutableStateOf("") }
-    var confirmar   by remember { mutableStateOf("") }
+    var nombreCompleto by remember { mutableStateOf("") }
+    var correo by remember { mutableStateOf("") }
+    var contrasena by remember { mutableStateOf("") }
+    var confirmar by remember { mutableStateOf("") }
     var aceptoTerminos by remember { mutableStateOf(false) }
+    var rolSeleccionado by remember { mutableStateOf("TUTOR") }
+
+    val authState by authViewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            authViewModel.resetState()
+            navController.navigate(Rutas.HOME) {
+                popUpTo(Rutas.LOGIN) { inclusive = true }
+            }
+        }
+    }
+
+    val passwordsMatch = contrasena == confirmar || confirmar.isEmpty()
+    val canRegister = aceptoTerminos &&
+            nombreCompleto.isNotBlank() &&
+            correo.isNotBlank() &&
+            contrasena.length >= 8 &&
+            contrasena == confirmar &&
+            authState !is AuthState.Loading
 
     Column(
         modifier = Modifier
@@ -39,31 +61,22 @@ fun RegistroScreen(navController: NavController) {
             .background(Color(0xFFF7F9FC))
             .verticalScroll(rememberScrollState())
     ) {
-
-        // Header azul
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(azulOscuro, azulKidCare)
-                    )
+                    brush = Brush.linearGradient(colors = listOf(azulOscuro, azulKidCare))
                 )
                 .padding(top = 48.dp, bottom = 32.dp, start = 24.dp, end = 24.dp)
         ) {
             Column {
-                // Botón volver
                 TextButton(
                     onClick = { navController.popBackStack() },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color.White.copy(alpha = 0.8f)
-                    )
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
                 ) {
                     Text("← Volver", fontSize = 14.sp)
                 }
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "Crear cuenta",
                     fontSize = 26.sp,
@@ -79,7 +92,7 @@ fun RegistroScreen(navController: NavController) {
             }
         }
 
-        // Indicador de pasos
+        // Step indicator
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -87,7 +100,6 @@ fun RegistroScreen(navController: NavController) {
                 .padding(horizontal = 22.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Paso 1
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
@@ -99,16 +111,12 @@ fun RegistroScreen(navController: NavController) {
                 }
                 Text("Cuenta", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = azulKidCare)
             }
-
-            // Línea
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(2.dp)
                     .background(Color(0xFFE5E7EB))
             )
-
-            // Paso 2
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
@@ -120,16 +128,12 @@ fun RegistroScreen(navController: NavController) {
                 }
                 Text("Términos", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9CA3AF))
             }
-
-            // Línea
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(2.dp)
                     .background(Color(0xFFE5E7EB))
             )
-
-            // Paso 3
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
@@ -143,12 +147,74 @@ fun RegistroScreen(navController: NavController) {
             }
         }
 
-        // Formulario
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
+        Column(modifier = Modifier.padding(24.dp)) {
 
-            // Correo
+            if (authState is AuthState.Error) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Text(
+                        text = (authState as AuthState.Error).message,
+                        color = Color(0xFFB71C1C),
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = "TIPO DE CUENTA",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280),
+                letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf("TUTOR" to "Tutor / Padre", "DELEGADO" to "Apoderado").forEach { (rol, label) ->
+                    val seleccionado = rolSeleccionado == rol
+                    Button(
+                        onClick = { rolSeleccionado = rol },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (seleccionado) azulKidCare else Color(0xFFE5E7EB),
+                            contentColor = if (seleccionado) Color.White else Color(0xFF374151)
+                        )
+                    ) {
+                        Text(label, fontSize = 13.sp, fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "NOMBRE COMPLETO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280),
+                letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+            OutlinedTextField(
+                value = nombreCompleto,
+                onValueChange = { nombreCompleto = it },
+                placeholder = { Text("Tu nombre completo", color = Color(0xFF9CA3AF)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                enabled = authState !is AuthState.Loading
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             Text(
                 text = "CORREO ELECTRÓNICO",
                 fontSize = 11.sp,
@@ -163,12 +229,12 @@ fun RegistroScreen(navController: NavController) {
                 placeholder = { Text("tu@correo.com", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
+                enabled = authState !is AuthState.Loading
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Contraseña
             Text(
                 text = "CONTRASEÑA",
                 fontSize = 11.sp,
@@ -189,9 +255,12 @@ fun RegistroScreen(navController: NavController) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
+                enabled = authState !is AuthState.Loading
             )
-            // Confirmar contraseña
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             Text(
                 text = "CONFIRMAR CONTRASEÑA",
                 fontSize = 11.sp,
@@ -210,11 +279,20 @@ fun RegistroScreen(navController: NavController) {
                         Text(if (verConfirmar) "🙈" else "👁", fontSize = 18.sp)
                     }
                 },
+                isError = confirmar.isNotEmpty() && !passwordsMatch,
+                supportingText = {
+                    if (confirmar.isNotEmpty() && !passwordsMatch) {
+                        Text("Las contraseñas no coinciden", color = Color(0xFFB71C1C))
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
+                enabled = authState !is AuthState.Loading
             )
-            // Términos y condiciones
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -239,21 +317,28 @@ fun RegistroScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón crear cuenta
             Button(
-                onClick = { navController.navigate(Rutas.HOME) },
+                onClick = { authViewModel.registro(nombreCompleto, correo, contrasena, rolSeleccionado) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(13.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                enabled = aceptoTerminos
+                enabled = canRegister
             ) {
-                Text(
-                    text = "Crear cuenta",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (authState is AuthState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Crear cuenta",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
