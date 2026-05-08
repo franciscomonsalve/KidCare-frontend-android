@@ -57,7 +57,7 @@ fun PerfilScreen(navController: NavController) {
             .background(Color(0xFFF2F5FB))
     ) {
 
-        // Header con avatar
+        // HEADER: Perfil del Usuario
         item {
             Box(
                 modifier = Modifier
@@ -71,7 +71,6 @@ fun PerfilScreen(navController: NavController) {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Avatar
                     Box(
                         modifier = Modifier
                             .size(72.dp)
@@ -90,283 +89,165 @@ fun PerfilScreen(navController: NavController) {
                     Text(
                         text = "carlos@correo.com",
                         fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.65f),
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = Color.White.copy(alpha = 0.65f)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(20.dp))
-                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                    Surface(
+                        color = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
                             text = "TUTOR",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                         )
                     }
                 }
             }
         }
 
-        // Sección cuenta
+        // SECCIÓN: Cuenta
         item {
-            Text(
-                text = "CUENTA",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
-            )
+            SeccionTitulo("CUENTA")
+            CardContenedor {
+                val opcionesCuenta = listOf(
+                    Triple("👤", "Editar perfil",       Rutas.CONFIGURACION),
+                    Triple("🔒", "Cambiar contraseña",  Rutas.CAMBIAR_CONTRASENA),
+                    Triple("🔔", "Notificaciones",      Rutas.CONFIGURACION),
+                )
+                opcionesCuenta.forEachIndexed { index, (emoji, titulo, ruta) ->
+                    FilaMenu(emoji, titulo, onClick = { navController.navigate(ruta) })
+                    if (index < opcionesCuenta.size - 1) DividerPersonalizado()
+                }
+            }
+        }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color.White, shape = RoundedCornerShape(14.dp))
-            ) {
-                Column {
-                    listOf(
-                        Triple("👤", "Editar perfil",       Rutas.CONFIGURACION),
-                        Triple("🔒", "Cambiar contraseña",  Rutas.CAMBIAR_CONTRASENA),
-                        Triple("🔔", "Notificaciones",      Rutas.CONFIGURACION),
-                    ).forEach { (emoji, titulo, ruta) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { navController.navigate(ruta) }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFF2F5FB), shape = RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(emoji, fontSize = 18.sp)
-                            }
-                            Text(
-                                text = titulo,
-                                fontSize = 14.sp,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
-                        }
-                        if (titulo != "Notificaciones") {
-                            Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
-                        }
+        // SECCIÓN: Mis Hijos (CORREGIDA)
+        item {
+            SeccionTitulo("MIS HIJOS")
+            CardContenedor {
+                // Lista dinámica de hijos
+                val misHijos = listOf(
+                    Triple("👧", "Amalia", "5 años"),
+                    Triple("👦", "Mateo", "10 años")
+                )
+
+                misHijos.forEachIndexed { index, (emoji, nombre, edad) ->
+                    // Fila del Niño/a
+                    FilaMenu(emoji, "$nombre · $edad", onClick = { /* Ir a detalle */ })
+
+                    DividerPersonalizado()
+
+                    // Fila de Delegados vinculada al niño
+                    FilaMenu(
+                        emoji = "👥",
+                        titulo = "Delegados de $nombre",
+                        onClick = { navController.navigate("delegados/${index + 1}") }
+                    )
+
+                    // Solo poner un separador visual fuerte si hay más hijos después
+                    if (index < misHijos.size - 1) {
+                        Divider(color = Color(0xFFF2F5FB), thickness = 6.dp)
                     }
                 }
             }
         }
 
-        // Sección menores
+        // SECCIÓN: Soporte
         item {
-            Text(
-                text = "MIS HIJOS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color.White, shape = RoundedCornerShape(14.dp))
-            ) {
-                Column {
-                    listOf(
-                        Pair("👧", "Sofía · 5 años"),
-                        Pair("👦", "Mateo · 3 años"),
-                    ).forEach { (emoji, nombre) ->
-                        // Sofía
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("👧", fontSize = 18.sp)
-                            }
-                            Text(
-                                text = "Amalia · 5 años",
-                                fontSize = 14.sp,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
-                        }
-
-                        Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
-
-                        // Delegados de Amalia
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { navController.navigate("delegados/1") }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("👥", fontSize = 18.sp)
-                            }
-                            Text(
-                                text = "Delegados de Amalia",
-                                fontSize = 14.sp,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
-                        }
-
-                        Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
-
-                        // Mateo
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("👦", fontSize = 18.sp)
-                            }
-                            Text(
-                                text = "Mateo · 10 años",
-                                fontSize = 14.sp,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
-                        }
-
-                        Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
-
-                        // Delegados de Mateo
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { navController.navigate("delegados/2") }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("👥", fontSize = 18.sp)
-                            }
-                            Text(
-                                text = "Delegados de Mateo",
-                                fontSize = 14.sp,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
-                        }
-                    }
+            SeccionTitulo("SOPORTE")
+            CardContenedor {
+                val soporte = listOf("📄 Términos y condiciones", "🔐 Política de privacidad", "❓ Ayuda y soporte")
+                soporte.forEachIndexed { index, texto ->
+                    FilaMenu("", texto, showIcon = false)
+                    if (index < soporte.size - 1) DividerPersonalizado()
                 }
             }
         }
 
-        // Sección soporte
+        // BOTÓN: Cerrar Sesión
         item {
-            Text(
-                text = "SOPORTE",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
-            )
-
-            Box(
+            Spacer(modifier = Modifier.height(24.dp))
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .background(Color.White, shape = RoundedCornerShape(14.dp))
-            ) {
-                Column {
-                    listOf(
-                        "📄 Términos y condiciones",
-                        "🔐 Política de privacidad",
-                        "❓ Ayuda y soporte",
-                    ).forEach { item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = item,
-                                fontSize = 14.sp,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
-                        }
-                        if (item != "❓ Ayuda y soporte") {
-                            Divider(color = Color(0xFFF2F5FB), thickness = 1.dp)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Botón cerrar sesión
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color(0xFFFEF2F2), shape = RoundedCornerShape(14.dp))
-                    .clickable { mostrarDialogoCerrar = true }
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+                    .clickable { mostrarDialogoCerrar = true },
+                color = Color(0xFFFEF2F2),
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
                     text = "🚪 Cerrar sesión",
+                    modifier = Modifier.padding(16.dp),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFDC2626)
+                    color = Color(0xFFDC2626),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
+}
+
+// COMPOSABLES REUTILIZABLES PARA LIMPIEZA
+@Composable
+fun SeccionTitulo(texto: String) {
+    Text(
+        text = texto,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF6B7280),
+        letterSpacing = 0.6.sp,
+        modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp)
+    )
+}
+
+@Composable
+fun CardContenedor(content: @Composable ColumnScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .background(Color.White, shape = RoundedCornerShape(14.dp))
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+fun FilaMenu(emoji: String, titulo: String, showIcon: Boolean = true, onClick: () -> Unit = {}) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (showIcon) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color(0xFFF2F5FB), shape = RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(emoji, fontSize = 18.sp)
+            }
+        }
+        Text(
+            text = titulo,
+            fontSize = 14.sp,
+            color = Color(0xFF0F172A),
+            modifier = Modifier.weight(1f)
+        )
+        Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
+    }
+}
+
+@Composable
+fun DividerPersonalizado() {
+    Divider(color = Color(0xFFF2F5FB), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
 }

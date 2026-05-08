@@ -1,6 +1,8 @@
 package com.example.kidcare.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,20 +16,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import com.example.kidcare.navigation.Rutas
 
 @Composable
-fun InvitarDelegadoScreen(navController: NavController) {
+fun InvitarDelegadoScreen(navController: NavHostController) {
 
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
+    val verdeExito  = Color(0xFF10B981)
+    val rojoError   = Color(0xFFEF4444)
 
-    var nombre    by remember { mutableStateOf("") }
-    var correo    by remember { mutableStateOf("") }
-    var relacion  by remember { mutableStateOf("") }
-    var invitadoExitoso by remember { mutableStateOf(false) }
+    var nombreDelegado by remember { mutableStateOf("") }
+    var correoDelegado by remember { mutableStateOf("") }
 
-    val relaciones = listOf("Abuelo/a", "Tío/a", "Hermano/a", "Niñero/a", "Otro")
+    // Estado para el tiempo de acceso
+    val opcionesTiempo = listOf("24 h", "48 h", "1 semana", "Indefinido")
+    var tiempoSeleccionado by remember { mutableStateOf("Indefinido") }
 
     Column(
         modifier = Modifier
@@ -35,209 +40,161 @@ fun InvitarDelegadoScreen(navController: NavController) {
             .background(Color(0xFFF2F5FB))
             .verticalScroll(rememberScrollState())
     ) {
-
-        // Header
+        // --- HEADER ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(azulOscuro, azulKidCare)
-                    )
+                    brush = Brush.linearGradient(colors = listOf(azulOscuro, azulKidCare)),
+                    shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                 )
-                .padding(top = 48.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
+                .padding(top = 48.dp, bottom = 28.dp, start = 20.dp, end = 20.dp)
         ) {
             Column {
-                TextButton(
-                    onClick = { navController.popBackStack() },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color.White.copy(alpha = 0.8f)
-                    )
-                ) {
-                    Text("← Volver", fontSize = 14.sp)
-                }
                 Text(
-                    text = "Invitar delegado",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(start = 8.dp)
+                    text = "← Volver",
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.clickable { navController.popBackStack() }
                 )
-                Text(
-                    text = "El delegado recibirá una invitación por correo",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Invitar Delegado", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Asigna permisos y tiempo de acceso", fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f))
             }
         }
 
         Column(modifier = Modifier.padding(20.dp)) {
 
-            if (invitadoExitoso) {
-                // Pantalla de éxito
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFDCFCE7), shape = RoundedCornerShape(16.dp))
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("✅", fontSize = 48.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Invitación enviada",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF059669)
-                        )
-                        Text(
-                            text = "Se envió una invitación a $correo",
-                            fontSize = 13.sp,
-                            color = Color(0xFF6B7280),
-                            modifier = Modifier.padding(top = 6.dp)
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = { navController.popBackStack() },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF059669)
-                            )
-                        ) {
-                            Text("Volver a delegados", fontWeight = FontWeight.Bold)
+            // --- FORMULARIO ---
+            SeccionTituloDelegado("NOMBRE DEL DELEGADO")
+            OutlinedTextField(
+                value = nombreDelegado,
+                onValueChange = { nombreDelegado = it },
+                placeholder = { Text("Carmen López") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = azulKidCare)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SeccionTituloDelegado("CORREO ELECTRÓNICO")
+            OutlinedTextField(
+                value = correoDelegado,
+                onValueChange = { correoDelegado = it },
+                placeholder = { Text("carmen@email.cl") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = azulKidCare)
+            )
+
+            // --- TIEMPO DE ACCESO ---
+            SeccionTituloDelegado("TIEMPO DE ACCESO")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                opcionesTiempo.forEach { tiempo ->
+                    val seleccionado = tiempo == tiempoSeleccionado
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .clickable { tiempoSeleccionado = tiempo },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (seleccionado) Color(0xFFEFF6FF) else Color.White,
+                        border = BorderStroke(1.dp, if (seleccionado) azulKidCare else Color(0xFFE5E7EB))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (tiempo == "Indefinido" && seleccionado) {
+                                    Text("∞ ", color = azulKidCare, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                }
+                                Text(
+                                    text = tiempo,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (seleccionado) azulKidCare else Color.DarkGray
+                                )
+                            }
                         }
                     }
                 }
-            } else {
-                // Formulario
+            }
+
+            // --- PERMISOS ---
+            SeccionTituloDelegado("PERMISOS DEL DELEGADO")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ItemPermiso("Ver bitácora del menor", true, verdeExito)
+                    ItemPermiso("Registrar interacciones (chatbot y manual)", true, verdeExito)
+                    ItemPermiso("Eliminar interacciones", false, rojoError)
+                    ItemPermiso("Generar enlace para médico", false, rojoError)
+                    ItemPermiso("Gestionar otros delegados", false, rojoError)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- BOTÓN DE ENVÍO ---
+            Button(
+                onClick = { /* Lógica de envío */ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📧  ", fontSize = 18.sp)
+                    Text("Enviar invitación por correo", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+fun SeccionTituloDelegado(texto: String) {
+    Text(
+        text = texto,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF6B7280),
+        letterSpacing = 0.6.sp,
+        modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
+    )
+}
+
+@Composable
+fun ItemPermiso(texto: String, habilitado: Boolean, colorIcono: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Icono de Check o Prohibido
+        Surface(
+            modifier = Modifier.size(20.dp),
+            color = colorIcono.copy(alpha = 0.1f),
+            shape = RoundedCornerShape(6.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = "NOMBRE COMPLETO",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 0.6.sp,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    text = if (habilitado) "✓" else "✕",
+                    color = colorIcono,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    placeholder = { Text("María González", color = Color(0xFF9CA3AF)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = azulKidCare,
-                        unfocusedBorderColor = Color(0xFFE5E7EB)
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = "CORREO ELECTRÓNICO",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 0.6.sp,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-                OutlinedTextField(
-                    value = correo,
-                    onValueChange = { correo = it },
-                    placeholder = { Text("maria@correo.cl", color = Color(0xFF9CA3AF)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = azulKidCare,
-                        unfocusedBorderColor = Color(0xFFE5E7EB)
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = "RELACIÓN CON EL MENOR",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 0.6.sp,
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    relaciones.take(3).forEach { r ->
-                        FilterChip(
-                            selected = relacion == r,
-                            onClick = { relacion = r },
-                            label = { Text(r, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFEFF6FF),
-                                selectedLabelColor = azulKidCare
-                            )
-                        )
-                    }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                ) {
-                    relaciones.drop(3).forEach { r ->
-                        FilterChip(
-                            selected = relacion == r,
-                            onClick = { relacion = r },
-                            label = { Text(r, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFEFF6FF),
-                                selectedLabelColor = azulKidCare
-                            )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Aviso
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFFFBEB), shape = RoundedCornerShape(12.dp))
-                        .padding(14.dp)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("⚠️", fontSize = 16.sp)
-                        Text(
-                            text = "El delegado solo podrá registrar observaciones. No tendrá acceso a compartir la bitácora con médicos.",
-                            fontSize = 12.sp,
-                            color = Color(0xFF92400E),
-                            lineHeight = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = { invitadoExitoso = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                    enabled = nombre.isNotBlank() && correo.isNotBlank() && relacion.isNotBlank()
-                ) {
-                    Text("Enviar invitación", fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = texto,
+            fontSize = 13.sp,
+            color = if (habilitado) Color(0xFF374151) else Color(0xFF9CA3AF)
+        )
     }
 }
