@@ -19,6 +19,7 @@ import com.example.kidcare.ui.screens.PerfilScreen
 import com.example.kidcare.ui.screens.RecuperarContrasenaScreen
 import com.example.kidcare.ui.screens.RegistroScreen
 import com.example.kidcare.ui.screens.SplashScreen
+import com.example.kidcare.ui.screens.VincularMenorScreen
 
 object Rutas {
     const val SPLASH        = "splash"
@@ -42,6 +43,8 @@ object Rutas {
     const val RECUPERAR_CONTRASENA = "recuperar_contrasena"
 
     const val HOME_DELEGADO = "home_delegado"
+
+    const val VINCULAR_MENOR = "vincular_menor"
 
 }
 
@@ -103,7 +106,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Rutas.HOME_DELEGADO) {
             HomeDelegadoScreen(navController)
         }
-
+        composable(Rutas.VINCULAR_MENOR) {
+            VincularMenorScreen(navController)
+        }
 
     }
 }

@@ -6,10 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -17,216 +16,359 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import com.example.kidcare.navigation.Rutas
 
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun HomeScreen(navController: NavController) {
+
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
+    val azulTeal    = Color(0xFF0891B2)
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF2F5FB))) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+    data class MenorItem(
+        val id: String,
+        val nombre: String,
+        val edad: String,
+        val emoji: String,
+        val observaciones: Int
+    )
 
-            // --- HEADER AZUL ---
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.linearGradient(colors = listOf(azulOscuro, azulKidCare)),
-                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+    var menorSeleccionado by remember { mutableStateOf("1") }
+
+    val menores = listOf(
+        MenorItem("1", "Sofía", "5 años", "👧", 12),
+        MenorItem("2", "Mateo", "3 años", "👦", 8),
+    )
+
+    val menor = menores.find { it.id == menorSeleccionado } ?: menores.first()
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF2F5FB))
+    ) {
+
+        // Header
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(azulOscuro, azulKidCare, azulTeal)
                         )
-                        .padding(top = 56.dp, bottom = 32.dp, start = 24.dp, end = 24.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("Bienvenido,", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
-                                Text("Carlos 👋", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                            }
+                    )
+                    .padding(top = 48.dp, bottom = 20.dp, start = 20.dp, end = 20.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Bienvenido,",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = "Carlos 👋",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
 
-                            // EL BOTÓN QUE PEDISTE: Avatar que lleva al Perfil
+                        // Avatar perfil clickeable
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(
+                                    Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(50)
+                                )
+                                .clickable {
+                                    navController.navigate(Rutas.CONFIGURACION)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("👤", fontSize = 22.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Chips menores
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(menores) { m ->
+                            val seleccionado = m.id == menorSeleccionado
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
-                                    .background(Color.White.copy(alpha = 0.2f), shape = CircleShape)
+                                    .background(
+                                        if (seleccionado) Color.White.copy(alpha = 0.92f)
+                                        else Color.White.copy(alpha = 0.14f),
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable { menorSeleccionado = m.id }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(m.emoji, fontSize = 22.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = m.nombre,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (seleccionado) azulKidCare
+                                            else Color.White
+                                        )
+                                        Text(
+                                            text = m.edad,
+                                            fontSize = 11.sp,
+                                            color = if (seleccionado)
+                                                azulKidCare.copy(alpha = 0.7f)
+                                            else Color.White.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Botón agregar menor
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        Color.White.copy(alpha = 0.14f),
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
                                     .clickable {
-                                        // Navega a la pantalla de Perfil (Configuración)
-                                        navController.navigate(Rutas.CONFIGURACION)
-                                    },
+                                        navController.navigate(Rutas.AGREGAR_MENOR)
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("👤", fontSize = 24.sp)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Fila de Niños (Amalia, Mateo, Agregar)
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            item { KidCardMini("👧", "Amalia", "5 años", true) }
-                            item { KidCardMini("👦", "Mateo", "10 años", false) }
-                            item { AddKidCard(onClick = {
-                                    navController.navigate(Rutas.AGREGAR_MENOR)
-                                })
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text("+", fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text("Agregar", fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
                         }
                     }
                 }
             }
-
-            // --- SECCIÓN: ¿QUÉ QUIERES HACER? ---
-            item {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("¿Qué quieres hacer?", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1F2937))
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ActionCard("💬", "Registrar observación", "Con asistente IA", azulKidCare, Modifier.weight(1f))
-                        ActionCard("📋", "Ver bitácora", "12 registros", Color.White, Modifier.weight(1f), textColor = Color.Black)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Card inferior de compartir
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🔗", fontSize = 24.sp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text("Compartir con médico", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Enlace temporal", color = Color.Gray, fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // --- SECCIÓN: RECIENTES ---
-            item {
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Recientes", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text("Ver todas →", color = azulKidCare, fontSize = 14.sp)
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-            }
-
-            items(3) { index ->
-                val titulo = listOf("Fiebre registrada", "Tos seca leve", "Inapetencia")[index]
-                val hora = listOf("Hoy · 14:30", "Ayer · 09:15", "Ayer · 20:00")[index]
-                val colorDot = if(index == 0) Color.Blue else if(index == 1) Color.Green else Color.Red
-
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(8.dp).background(colorDot, CircleShape))
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(titulo, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                            Text(hora, color = Color.Gray, fontSize = 12.sp)
-                        }
-                    }
-                }
-            }
-            item { Spacer(modifier = Modifier.height(100.dp)) }
-        }
-    }
-}
-
-// --- COMPONENTES DEL HOME ---
-
-@Composable
-fun KidCardMini(emoji: String, nombre: String, edad: String, seleccionado: Boolean) {
-    Card(
-        modifier = Modifier.width(110.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (seleccionado) Color.White else Color.White.copy(alpha = 0.2f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(emoji, fontSize = 24.sp)
-            Text(nombre, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = if(seleccionado) Color.Blue else Color.White)
-            Text(edad, fontSize = 11.sp, color = if(seleccionado) Color.Gray else Color.White.copy(alpha = 0.7f))
-        }
-    }
-}
-
-@Composable
-fun AddKidCard(onClick: () -> Unit) {
-
-        Card(
-            modifier = Modifier
-                .width(110.dp)
-                .height(110.dp) // Asegúrate de darle un alto para que se vea igual a las otras
-                .clickable { onClick() }, // 2. Agregamos el .clickable para que responda al toque
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp).fillMaxSize(), // fillMaxSize para centrar bien
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("+", fontSize = 24.sp, color = Color.White)
-                Text("Agregar", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-
-
-@Composable
-fun ActionCard(emoji: String, titulo: String, sub: String, fondo: Color, modifier: Modifier, textColor: Color = Color.White) {
-    Card(
-        modifier = modifier.height(160.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = fondo),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxSize(), verticalArrangement = Arrangement.Center) {
-            Box(modifier = Modifier.size(40.dp).background(if(fondo == Color.White) Color(0xFFF2F5FB) else Color.White.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
-                Text(emoji, fontSize = 20.sp)
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = textColor)
-            Text(sub, fontSize = 11.sp, color = if(textColor == Color.White) Color.White.copy(alpha = 0.8f) else Color.Gray)
         }
 
-        @Composable
-        fun AddKidCard(onClick: () -> Unit) { // 1. Agrega el parámetro aquí
-            Card(
-                modifier = Modifier
-                    .width(110.dp)
-                    .height(110.dp) // o el alto que tengas
-                    .clickable { onClick() }, // 2. Agrega el .clickable aquí
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.1f)
+        // Grid acciones
+        item {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Text(
+                    text = "¿Qué quieres hacer?",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A),
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(text = "+", fontSize = 28.sp, color = Color.White)
-                    Text(text = "Agregar", fontSize = 13.sp, color = Color.White)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+
+                    // Registrar observación (grande izquierda)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(azulKidCare, azulTeal)
+                                ),
+                                shape = RoundedCornerShape(18.dp)
+                            )
+                            .clickable { navController.navigate("chatbot/${menor.id}") }
+                            .padding(18.dp)
+                    ) {
+                        Column {
+                            Text("💬", fontSize = 26.sp)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Registrar\nobservación",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                lineHeight = 18.sp
+                            )
+                            Text(
+                                text = "Con asistente IA",
+                                fontSize = 11.sp,
+                                color = Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+
+                    // Columna derecha con 3 acciones
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(11.dp)
+                    ) {
+
+                        // Ver bitácora
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White, shape = RoundedCornerShape(18.dp))
+                                .clickable { navController.navigate("bitacora/${menor.id}") }
+                                .padding(18.dp)
+                        ) {
+                            Column {
+                                Text("📋", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Ver bitácora",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = "${menor.observaciones} registros",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
+
+                        // Compartir con médico
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White, shape = RoundedCornerShape(18.dp))
+                                .clickable { navController.navigate("enlace/${menor.id}") }
+                                .padding(18.dp)
+                        ) {
+                            Column {
+                                Text("🔗", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Compartir\ncon médico",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF0F172A),
+                                    lineHeight = 18.sp
+                                )
+                                Text(
+                                    text = "Enlace temporal",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
+
+                        // Delegados
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White, shape = RoundedCornerShape(18.dp))
+                                .clickable { navController.navigate("delegados/${menor.id}") }
+                                .padding(18.dp)
+                        ) {
+                            Column {
+                                Text("👥", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Delegados",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = "Gestionar accesos",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
+
+        // Recientes
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Recientes",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF0F172A)
+                )
+                Text(
+                    text = "Ver todas →",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = azulKidCare,
+                    modifier = Modifier.clickable {
+                        navController.navigate("bitacora/${menor.id}")
+                    }
+                )
+            }
+        }
+
+        items(listOf(
+            Triple("💬", "Fiebre registrada", "Hoy · 14:30"),
+            Triple("📝", "Tos seca leve", "Ayer · 09:15"),
+            Triple("💬", "Inapetencia", "Hace 3 días"),
+        )) { (emoji, titulo, fecha) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 5.dp)
+                    .background(Color.White, shape = RoundedCornerShape(14.dp))
+                    .clickable { navController.navigate("bitacora/${menor.id}") }
+                    .padding(13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(11.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(
+                            if (emoji == "💬") azulKidCare else Color(0xFF059669),
+                            shape = RoundedCornerShape(50)
+                        )
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = titulo,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = fecha,
+                        fontSize = 11.sp,
+                        color = Color(0xFF9CA3AF),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Text("›", fontSize = 18.sp, color = Color(0xFF9CA3AF))
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(24.dp)) }
     }
 }

@@ -235,8 +235,19 @@ fun AgregarMenorScreen(navController: NavController) {
                 )
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = { navController.navigate(Rutas.VINCULAR_MENOR) },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = azulKidCare
+                )
+            ) {
+                Text("🔗 Vincular menor existente", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
             // Botón guardar
             Button(
                 onClick = { navController.navigate(Rutas.HOME) },
