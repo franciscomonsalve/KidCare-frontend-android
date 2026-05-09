@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,7 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,7 +44,7 @@ fun AgregarMenorScreen(
     val azulOscuro = Color(0xFF1E3A8A)
 
     var nombre by remember { mutableStateOf("") }
-    var fechaNacimiento by remember { mutableStateOf("") }
+    var fechaNacimiento by remember { mutableStateOf(TextFieldValue("")) }
     var sexo by remember { mutableStateOf("") }
 
     val crearState by menorViewModel.crearState.collectAsState()
@@ -52,8 +56,18 @@ fun AgregarMenorScreen(
         }
     }
 
+    val fechaTexto = fechaNacimiento.text
+    val fechaCompleta = fechaTexto.matches(Regex("\\d{2}/\\d{2}/\\d{4}"))
+    val fechaValida = if (fechaCompleta) {
+        val p = fechaTexto.split("/")
+        val dia = p[0].toIntOrNull() ?: 0
+        val mes = p[1].toIntOrNull() ?: 0
+        val anio = p[2].toIntOrNull() ?: 0
+        dia in 1..31 && mes in 1..12 && anio in 2000..2026
+    } else false
+
     val puedeGuardar = nombre.isNotBlank() &&
-            fechaNacimiento.matches(Regex("\\d{2}/\\d{2}/\\d{4}")) &&
+            fechaValida &&
             sexo.isNotBlank() &&
             crearState !is MenorState.Loading
 
@@ -125,28 +139,36 @@ fun AgregarMenorScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Fecha de nacimiento
+            // Fecha de nacimiento — cursor forzado al final para evitar inserciones en posición incorrecta
             Label("FECHA DE NACIMIENTO")
             OutlinedTextField(
                 value = fechaNacimiento,
                 onValueChange = { input ->
-                    val digits = input.filter { it.isDigit() }.take(8)
+                    val digits = input.text.filter { it.isDigit() }.take(8)
                     val formatted = buildString {
                         digits.forEachIndexed { i, c ->
                             if (i == 2 || i == 4) append('/')
                             append(c)
                         }
                     }
-                    fechaNacimiento = formatted
+                    fechaNacimiento = TextFieldValue(
+                        text = formatted,
+                        selection = TextRange(formatted.length)
+                    )
                 },
                 placeholder = { Text("DD/MM/AAAA  (ej: 15/05/2020)", color = Color(0xFF9CA3AF)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                isError = fechaNacimiento.isNotEmpty() && !fechaNacimiento.matches(Regex("\\d{2}/\\d{2}/\\d{4}")),
+                isError = fechaTexto.isNotEmpty() && !fechaValida,
                 supportingText = {
-                    if (fechaNacimiento.isNotEmpty() && !fechaNacimiento.matches(Regex("\\d{2}/\\d{2}/\\d{4}"))) {
-                        Text("Formato requerido: DD/MM/AAAA", color = Color(0xFFB71C1C))
+                    if (fechaTexto.isNotEmpty() && !fechaValida) {
+                        val msg = if (!fechaCompleta)
+                            "Formato requerido: DD/MM/AAAA"
+                        else
+                            "Fecha inválida (día 01–31, mes 01–12, año 2000–2026)"
+                        Text(msg, color = Color(0xFFB71C1C))
                     }
                 },
                 enabled = crearState !is MenorState.Loading
@@ -188,8 +210,8 @@ fun AgregarMenorScreen(
             // Botón guardar
             Button(
                 onClick = {
-                    val partes = fechaNacimiento.split("/")
-                    val fechaBackend = "${partes[2]}-${partes[1]}-${partes[0]}"
+                    val p = fechaNacimiento.text.split("/")
+                    val fechaBackend = "${p[2]}-${p[1]}-${p[0]}"
                     menorViewModel.crearMenor(nombre.trim(), fechaBackend, sexo.lowercase())
                 },
                 modifier = Modifier
