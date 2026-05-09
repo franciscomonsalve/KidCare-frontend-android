@@ -5,30 +5,23 @@ package com.example.kidcare.data.model
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 
 data class LoginRequest(
-    val correo: String,
-    val contrasena: String
-)
-
-data class LoginResponse(
-    val token: String,
-    val userId: String,
-    val rol: String,        // TUTOR, DELEGADO
-    val nombre: String,
-    val correo: String
+    val email: String,
+    val password: String
 )
 
 data class RegistroRequest(
-    val nombre: String,
-    val correo: String,
-    val contrasena: String,
-    val telefono: String,
-    val rol: String = "TUTOR"
+    val nombreCompleto: String,
+    val email: String,
+    val password: String,
+    val telefono: String?,
+    val aceptaTerminos: Boolean = true
 )
 
-data class RegistroResponse(
-    val userId: String,
-    val correo: String,
-    val mensaje: String
+// Respuesta de /api/auth/registro y /api/auth/login
+data class AuthResponse(
+    val token: String,
+    val email: String,
+    val rol: String
 )
 
 // ─── MENOR ────────────────────────────────────────────────────────────────────
