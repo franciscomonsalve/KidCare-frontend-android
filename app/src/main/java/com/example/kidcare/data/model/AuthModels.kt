@@ -5,16 +5,13 @@ package com.example.kidcare.data.model
 /** Cuerpo de la petición POST /api/auth/login */
 data class LoginRequest(val email: String, val password: String)
 
-/**
- * Cuerpo de la petición POST /api/auth/registro.
- * @param rolNombre "TUTOR" (por defecto) o "DELEGADO"
- */
+/** Cuerpo de la petición POST /api/auth/registro. Siempre crea cuentas TUTOR. */
 data class RegistroRequest(
     val nombreCompleto: String,
     val email: String,
     val password: String,
     val aceptaTerminos: Boolean,
-    val rolNombre: String = "TUTOR"
+    val telefono: String? = null
 )
 
 /** Respuesta de login y registro: token JWT + email + rol del usuario */

@@ -23,32 +23,31 @@ import com.example.kidcare.ui.viewmodel.AuthState
 import com.example.kidcare.ui.viewmodel.AuthViewModel
 
 /**
- * Pantalla de registro de nuevo usuario.
+ * Pantalla de registro de nuevo usuario (solo rol TUTOR).
  *
- * Permite crear una cuenta con rol **TUTOR** (padre/tutor del menor) o **DELEGADO**
- * (apoderado con acceso de solo lectura, invitado posteriormente por un tutor).
- * Valida que las contraseñas coincidan y que se acepten los términos antes de
- * habilitar el botón de registro.
+ * El rol DELEGADO no se puede elegir al registrarse — es asignado posteriormente
+ * por el tutor desde la pantalla de invitar apoderado.
  *
- * Al completar el registro con éxito ([AuthState.Success]) navega a [HomeScreen]
- * y elimina el flujo de autenticación de la pila de retroceso.
+ * Requiere nombre, apellidos, correo y contraseña (mínimo 8 caracteres,
+ * una mayúscula y un símbolo especial). Teléfono es opcional.
  *
  * @param navController controlador de navegación
- * @param authViewModel ViewModel compartido de autenticación (inyectado por defecto)
+ * @param authViewModel ViewModel compartido de autenticación
  */
 @Composable
 fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
-    var verContrasena by remember { mutableStateOf(false) }
-    var verConfirmar by remember { mutableStateOf(false) }
     val azulKidCare = Color(0xFF2563EB)
-    val azulOscuro = Color(0xFF1E3A8A)
+    val azulOscuro  = Color(0xFF1E3A8A)
 
-    var nombreCompleto by remember { mutableStateOf("") }
-    var correo by remember { mutableStateOf("") }
-    var contrasena by remember { mutableStateOf("") }
-    var confirmar by remember { mutableStateOf("") }
+    var nombre      by remember { mutableStateOf("") }
+    var apellidos   by remember { mutableStateOf("") }
+    var telefono    by remember { mutableStateOf("") }
+    var correo      by remember { mutableStateOf("") }
+    var contrasena  by remember { mutableStateOf("") }
+    var confirmar   by remember { mutableStateOf("") }
+    var verContrasena  by remember { mutableStateOf(false) }
+    var verConfirmar   by remember { mutableStateOf(false) }
     var aceptoTerminos by remember { mutableStateOf(false) }
-    var rolSeleccionado by remember { mutableStateOf("TUTOR") }
 
     val authState by authViewModel.authState.collectAsState()
 
@@ -61,11 +60,18 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
         }
     }
 
+    // Validaciones de contraseña
+    val tieneMinimo    = contrasena.length >= 8
+    val tieneMayuscula = contrasena.any { it.isUpperCase() }
+    val tieneSimbolo   = contrasena.any { !it.isLetterOrDigit() }
+    val passwordValida = tieneMinimo && tieneMayuscula && tieneSimbolo
     val passwordsMatch = contrasena == confirmar || confirmar.isEmpty()
+
     val canRegister = aceptoTerminos &&
-            nombreCompleto.isNotBlank() &&
+            nombre.isNotBlank() &&
+            apellidos.isNotBlank() &&
             correo.isNotBlank() &&
-            contrasena.length >= 8 &&
+            passwordValida &&
             contrasena == confirmar &&
             authState !is AuthState.Loading
 
@@ -75,12 +81,11 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
             .background(Color(0xFFF7F9FC))
             .verticalScroll(rememberScrollState())
     ) {
+        // Encabezado
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(colors = listOf(azulOscuro, azulKidCare))
-                )
+                .background(brush = Brush.linearGradient(colors = listOf(azulOscuro, azulKidCare)))
                 .padding(top = 48.dp, bottom = 32.dp, start = 24.dp, end = 24.dp)
         ) {
             Column {
@@ -91,12 +96,7 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
                     Text("← Volver", fontSize = 14.sp)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Crear cuenta",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Text("Crear cuenta", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(
                     text = "Registro para padres y tutores",
                     fontSize = 13.sp,
@@ -106,68 +106,11 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
             }
         }
 
-        // Step indicator
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(horizontal = 22.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(azulKidCare, shape = RoundedCornerShape(50)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-                Text("Cuenta", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = azulKidCare)
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(2.dp)
-                    .background(Color(0xFFE5E7EB))
-            )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(Color(0xFFE5E7EB), shape = RoundedCornerShape(50)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("2", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9CA3AF))
-                }
-                Text("Términos", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9CA3AF))
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(2.dp)
-                    .background(Color(0xFFE5E7EB))
-            )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(Color(0xFFE5E7EB), shape = RoundedCornerShape(50)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("3", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9CA3AF))
-                }
-                Text("Listo", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9CA3AF))
-            }
-        }
-
         Column(modifier = Modifier.padding(24.dp)) {
 
             if (authState is AuthState.Error) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
                 ) {
                     Text(
@@ -179,64 +122,44 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
                 }
             }
 
-            Text(
-                text = "TIPO DE CUENTA",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                listOf("TUTOR" to "Tutor / Padre", "DELEGADO" to "Apoderado").forEach { (rol, label) ->
-                    val seleccionado = rolSeleccionado == rol
-                    Button(
-                        onClick = { rolSeleccionado = rol },
-                        modifier = Modifier.weight(1f).height(44.dp),
+            // Nombre y Apellidos (fila doble)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("NOMBRE", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280), letterSpacing = 0.6.sp,
+                        modifier = Modifier.padding(bottom = 6.dp))
+                    OutlinedTextField(
+                        value = nombre,
+                        onValueChange = { nombre = it },
+                        placeholder = { Text("Nombre", color = Color(0xFF9CA3AF)) },
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (seleccionado) azulKidCare else Color(0xFFE5E7EB),
-                            contentColor = if (seleccionado) Color.White else Color(0xFF374151)
-                        )
-                    ) {
-                        Text(label, fontSize = 13.sp, fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal)
-                    }
+                        singleLine = true,
+                        enabled = authState !is AuthState.Loading
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("APELLIDOS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280), letterSpacing = 0.6.sp,
+                        modifier = Modifier.padding(bottom = 6.dp))
+                    OutlinedTextField(
+                        value = apellidos,
+                        onValueChange = { apellidos = it },
+                        placeholder = { Text("Apellidos", color = Color(0xFF9CA3AF)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        enabled = authState !is AuthState.Loading
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "NOMBRE COMPLETO",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
-            OutlinedTextField(
-                value = nombreCompleto,
-                onValueChange = { nombreCompleto = it },
-                placeholder = { Text("Tu nombre completo", color = Color(0xFF9CA3AF)) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                enabled = authState !is AuthState.Loading
-            )
-
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = "CORREO ELECTRÓNICO",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
+            // Correo
+            Text("CORREO ELECTRÓNICO", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280), letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = correo,
                 onValueChange = { correo = it },
@@ -249,14 +172,26 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = "CONTRASEÑA",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(bottom = 6.dp)
+            // Teléfono (opcional)
+            Text("TELÉFONO (opcional)", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280), letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp))
+            OutlinedTextField(
+                value = telefono,
+                onValueChange = { telefono = it },
+                placeholder = { Text("+56 9 1234 5678", color = Color(0xFF9CA3AF)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                enabled = authState !is AuthState.Loading
             )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Contraseña
+            Text("CONTRASEÑA", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280), letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = contrasena,
                 onValueChange = { contrasena = it },
@@ -273,16 +208,28 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
                 enabled = authState !is AuthState.Loading
             )
 
+            // Indicadores de requisitos de contraseña
+            if (contrasena.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        RequisitoClave("Mínimo 8 caracteres", tieneMinimo)
+                        RequisitoClave("Al menos una mayúscula", tieneMayuscula)
+                        RequisitoClave("Al menos un símbolo (!@#\$%...)", tieneSimbolo)
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = "CONFIRMAR CONTRASEÑA",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280),
-                letterSpacing = 0.6.sp,
-                modifier = Modifier.padding(bottom = 6.dp)
-            )
+            // Confirmar contraseña
+            Text("CONFIRMAR CONTRASEÑA", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF6B7280), letterSpacing = 0.6.sp,
+                modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = confirmar,
                 onValueChange = { confirmar = it },
@@ -307,6 +254,7 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            // Términos y condiciones
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -332,28 +280,30 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { authViewModel.registro(nombreCompleto, correo, contrasena, rolSeleccionado) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
+                onClick = {
+                    val nombreCompleto = "${nombre.trim()} ${apellidos.trim()}"
+                    authViewModel.registro(nombreCompleto, correo, contrasena, telefono.ifBlank { null })
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(13.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
                 enabled = canRegister
             ) {
                 if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text(
-                        text = "Crear cuenta",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Crear cuenta", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
+    }
+}
+
+/** Muestra un requisito de contraseña con indicador verde/rojo según si se cumple. */
+@Composable
+private fun RequisitoClave(texto: String, cumplido: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(if (cumplido) "✓" else "✗", fontSize = 12.sp, color = if (cumplido) Color(0xFF16A34A) else Color(0xFFDC2626))
+        Text(texto, fontSize = 11.sp, color = if (cumplido) Color(0xFF16A34A) else Color(0xFF6B7280))
     }
 }

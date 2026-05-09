@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,6 +39,7 @@ import com.example.kidcare.ui.viewmodel.AuthViewModel
 fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
+    var verContrasena by remember { mutableStateOf(false) }
 
     val azulKidCare = Color(0xFF4A90D9)
     val fondoGris = Color(0xFFF7F9FC)
@@ -113,7 +115,12 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
                 value = contrasena,
                 onValueChange = { contrasena = it },
                 label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (verContrasena) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { verContrasena = !verContrasena }) {
+                        Text(if (verContrasena) "🙈" else "👁", fontSize = 18.sp)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,

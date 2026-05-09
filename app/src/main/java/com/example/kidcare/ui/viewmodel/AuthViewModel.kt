@@ -74,19 +74,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Registra un nuevo usuario en el sistema.
+     * Registra un nuevo usuario con rol TUTOR.
      *
-     * @param nombreCompleto nombre completo del usuario
+     * @param nombreCompleto nombre y apellidos combinados
      * @param email correo electrónico (debe ser único)
-     * @param password contraseña (mínimo 8 caracteres validados en la UI)
-     * @param rol "TUTOR" (por defecto) o "DELEGADO"
+     * @param password contraseña (validada en la UI: 8+ chars, mayúscula y símbolo)
+     * @param telefono teléfono de contacto opcional
      */
-    fun registro(nombreCompleto: String, email: String, password: String, rol: String = "TUTOR") {
+    fun registro(nombreCompleto: String, email: String, password: String, telefono: String? = null) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 val response = ApiClient.usuarioApi.registro(
-                    RegistroRequest(nombreCompleto, email, password, true, rol)
+                    RegistroRequest(nombreCompleto, email, password, true, telefono)
                 )
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
