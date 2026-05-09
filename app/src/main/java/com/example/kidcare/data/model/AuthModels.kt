@@ -41,8 +41,20 @@ data class MenorRequest(val nombre: String, val fechaNacimiento: String, val sex
 
 // ─── Delegados ───────────────────────────────────────────────────────────────
 
-/** Cuerpo de POST /api/delegados/vincular: vincula un apoderado a un menor */
-data class DelegadoVincularRequest(val emailDelegado: String, val idMenor: Int)
+/** Cuerpo de POST /api/delegados/vincular */
+data class DelegadoVincularRequest(
+    val emailDelegado: String,
+    val idMenor: Int,
+    val fechaExpiracion: String? = null
+)
+
+/** Respuesta de GET /api/delegados/menor/{idMenor} */
+data class DelegadoResponse(
+    val idUsuario: Int,
+    val email: String,
+    val nombreCompleto: String,
+    val fechaExpiracion: String?
+)
 
 // ─── Historial ───────────────────────────────────────────────────────────────
 

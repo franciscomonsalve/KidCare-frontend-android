@@ -1,6 +1,7 @@
 package com.example.kidcare.data.network
 
 import com.example.kidcare.data.model.AuthResponse
+import com.example.kidcare.data.model.DelegadoResponse
 import com.example.kidcare.data.model.DelegadoVincularRequest
 import com.example.kidcare.data.model.LoginRequest
 import com.example.kidcare.data.model.MenorRequest
@@ -51,7 +52,15 @@ interface UsuarioApiService {
     @DELETE("api/menores/{id}")
     suspend fun eliminarMenor(@Path("id") id: Int): Response<String>
 
-    /** Vincula un apoderado (DELEGADO) a un menor del tutor autenticado. Solo TUTOR. */
+    /** Vincula un apoderado a un menor del tutor autenticado. Solo TUTOR. */
     @POST("api/delegados/vincular")
     suspend fun vincularDelegado(@Body request: DelegadoVincularRequest): Response<String>
+
+    /** Revoca el acceso del apoderado actual al menor indicado. Solo TUTOR. */
+    @DELETE("api/delegados/desvincular/{idMenor}")
+    suspend fun desvincularDelegado(@Path("idMenor") idMenor: Int): Response<String>
+
+    /** Retorna el apoderado actual del menor, o 204 si no hay ninguno. Solo TUTOR. */
+    @GET("api/delegados/menor/{idMenor}")
+    suspend fun obtenerDelegado(@Path("idMenor") idMenor: Int): Response<DelegadoResponse>
 }

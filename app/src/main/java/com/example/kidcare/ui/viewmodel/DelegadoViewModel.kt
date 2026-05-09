@@ -2,20 +2,13 @@ package com.example.kidcare.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.kidcare.data.model.DelegadoResponse
 import com.example.kidcare.data.model.DelegadoVincularRequest
 import com.example.kidcare.data.network.ApiClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Estados posibles para la operación de vinculación de un apoderado.
- *
- * - [Idle]: sin operación en curso
- * - [Loading]: petición en progreso
- * - [Success]: apoderado vinculado correctamente
- * - [Error]: operación fallida con mensaje descriptivo
- */
 sealed class VincularState {
     object Idle : VincularState()
     object Loading : VincularState()
@@ -23,42 +16,97 @@ sealed class VincularState {
     data class Error(val message: String) : VincularState()
 }
 
+sealed class DesvincularState {
+    object Idle : DesvincularState()
+    object Loading : DesvincularState()
+    object Success : DesvincularState()
+    data class Error(val message: String) : DesvincularState()
+}
+
 /**
- * ViewModel que gestiona la vinculación de apoderados (DELEGADO) a menores.
+ * ViewModel que gestiona la vinculación, consulta y revocación de apoderados.
  *
- * Solo los usuarios con rol TUTOR o ADMIN pueden vincular apoderados. El backend
- * valida que el tutor sea propietario del menor y que el email pertenezca a un
- * usuario registrado con rol DELEGADO.
+ * - [vincularState] — estado de la operación POST /vincular
+ * - [desvincularState] — estado de la operación DELETE /desvincular
+ * - [delegadoActual] — apoderado actualmente asignado al menor seleccionado (null si ninguno)
+ * - [cargandoDelegado] — true mientras se consulta el apoderado del menor
  */
 class DelegadoViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow<VincularState>(VincularState.Idle)
-    val state: StateFlow<VincularState> = _state
+    private val _vincularState = MutableStateFlow<VincularState>(VincularState.Idle)
+    val vincularState: StateFlow<VincularState> = _vincularState
 
-    /**
-     * Envía la petición para vincular un apoderado a un menor.
-     *
-     * @param emailDelegado correo del usuario DELEGADO a vincular
-     * @param idMenor identificador del menor al que se da acceso
-     */
-    fun vincular(emailDelegado: String, idMenor: Int) {
+    private val _desvincularState = MutableStateFlow<DesvincularState>(DesvincularState.Idle)
+    val desvincularState: StateFlow<DesvincularState> = _desvincularState
+
+    private val _delegadoActual = MutableStateFlow<DelegadoResponse?>(null)
+    val delegadoActual: StateFlow<DelegadoResponse?> = _delegadoActual
+
+    private val _cargandoDelegado = MutableStateFlow(false)
+    val cargandoDelegado: StateFlow<Boolean> = _cargandoDelegado
+
+    /** Carga el apoderado actualmente asignado al menor. Llama al GET del backend. */
+    fun cargarDelegado(idMenor: Int) {
         viewModelScope.launch {
-            _state.value = VincularState.Loading
+            _cargandoDelegado.value = true
+            _delegadoActual.value = null
             try {
-                val response = ApiClient.usuarioApi.vincularDelegado(
-                    DelegadoVincularRequest(emailDelegado, idMenor)
-                )
-                if (response.isSuccessful) {
-                    _state.value = VincularState.Success
-                } else {
-                    val msg = response.errorBody()?.string() ?: "No se pudo vincular"
-                    _state.value = VincularState.Error(msg)
-                }
+                val response = ApiClient.usuarioApi.obtenerDelegado(idMenor)
+                _delegadoActual.value = if (response.isSuccessful) response.body() else null
             } catch (e: Exception) {
-                _state.value = VincularState.Error("No se pudo conectar al servidor")
+                _delegadoActual.value = null
+            } finally {
+                _cargandoDelegado.value = false
             }
         }
     }
 
-    fun resetState() { _state.value = VincularState.Idle }
+    /**
+     * Vincula un usuario como apoderado del menor.
+     *
+     * @param emailDelegado   email del usuario a vincular
+     * @param idMenor         ID del menor
+     * @param fechaExpiracion fecha límite "YYYY-MM-DD"; null para acceso permanente
+     */
+    fun vincular(emailDelegado: String, idMenor: Int, fechaExpiracion: String? = null) {
+        viewModelScope.launch {
+            _vincularState.value = VincularState.Loading
+            try {
+                val response = ApiClient.usuarioApi.vincularDelegado(
+                    DelegadoVincularRequest(emailDelegado, idMenor, fechaExpiracion)
+                )
+                if (response.isSuccessful) {
+                    _vincularState.value = VincularState.Success
+                } else {
+                    val msg = response.errorBody()?.string() ?: "No se pudo vincular"
+                    _vincularState.value = VincularState.Error(msg)
+                }
+            } catch (e: Exception) {
+                _vincularState.value = VincularState.Error("No se pudo conectar al servidor")
+            }
+        }
+    }
+
+    /** Revoca el acceso del apoderado actual al menor. */
+    fun desvincular(idMenor: Int) {
+        viewModelScope.launch {
+            _desvincularState.value = DesvincularState.Loading
+            try {
+                val response = ApiClient.usuarioApi.desvincularDelegado(idMenor)
+                if (response.isSuccessful) {
+                    _delegadoActual.value = null
+                    _desvincularState.value = DesvincularState.Success
+                } else {
+                    val msg = response.errorBody()?.string() ?: "No se pudo revocar el acceso"
+                    _desvincularState.value = DesvincularState.Error(msg)
+                }
+            } catch (e: Exception) {
+                _desvincularState.value = DesvincularState.Error("No se pudo conectar al servidor")
+            }
+        }
+    }
+
+    fun limpiarDelegado() { _delegadoActual.value = null }
+    fun resetVincularState() { _vincularState.value = VincularState.Idle }
+    fun resetDesvincularState() { _desvincularState.value = DesvincularState.Idle }
 }
