@@ -25,6 +25,20 @@ import com.example.kidcare.data.preferences.SessionManager
 import com.example.kidcare.navigation.Rutas
 import com.example.kidcare.ui.viewmodel.MenorViewModel
 
+/**
+ * Pantalla principal de la aplicación tras el inicio de sesión.
+ *
+ * Muestra una barra de navegación inferior con cuatro pestañas: Inicio, Bitácora,
+ * Chatbot y Perfil. La pestaña de Inicio lista los menores vinculados al usuario;
+ * las acciones de agregar/eliminar menores e invitar apoderados solo se muestran
+ * para usuarios con rol TUTOR o ADMIN, ocultándose para DELEGADO.
+ *
+ * La pestaña de Perfil expone el botón de cerrar sesión, que limpia [SessionManager]
+ * y navega de vuelta a [LoginScreen].
+ *
+ * @param navController controlador de navegación
+ * @param menorViewModel ViewModel compartido con [AgregarMenorScreen]
+ */
 @Composable
 fun HomeScreen(
     navController: NavController,

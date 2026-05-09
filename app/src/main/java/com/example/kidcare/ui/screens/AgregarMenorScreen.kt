@@ -19,6 +19,18 @@ import androidx.navigation.NavController
 import com.example.kidcare.ui.viewmodel.MenorState
 import com.example.kidcare.ui.viewmodel.MenorViewModel
 
+/**
+ * Pantalla para crear un nuevo perfil de menor.
+ *
+ * Solicita nombre, fecha de nacimiento y sexo. Al confirmar llama a
+ * [MenorViewModel.crearMenor]; en caso de éxito ([MenorState.Success])
+ * regresa a [HomeScreen], que recarga automáticamente la lista de menores.
+ *
+ * Solo accesible para usuarios con rol TUTOR o ADMIN.
+ *
+ * @param navController controlador de navegación
+ * @param menorViewModel ViewModel compartido con [HomeScreen]
+ */
 @Composable
 fun AgregarMenorScreen(
     navController: NavController,

@@ -21,6 +21,19 @@ import com.example.kidcare.navigation.Rutas
 import com.example.kidcare.ui.viewmodel.AuthState
 import com.example.kidcare.ui.viewmodel.AuthViewModel
 
+/**
+ * Pantalla de inicio de sesión.
+ *
+ * Presenta campos de correo y contraseña y llama a [AuthViewModel.login] al pulsar
+ * "Iniciar sesión". Reacciona a [AuthState]: muestra un [CircularProgressIndicator]
+ * mientras carga y un mensaje de error en caso de fallo. En caso de éxito navega
+ * a [HomeScreen] y elimina esta pantalla de la pila de retroceso.
+ *
+ * También expone accesos directos a [RegistroScreen] y [RecuperarPasswordScreen].
+ *
+ * @param navController controlador de navegación
+ * @param authViewModel ViewModel compartido de autenticación (inyectado por defecto)
+ */
 @Composable
 fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     var correo by remember { mutableStateOf("") }
@@ -153,7 +166,7 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(onClick = { }) {
+            TextButton(onClick = { navController.navigate(Rutas.RECUPERAR_PASSWORD) }) {
                 Text(
                     text = "¿Olvidaste tu contraseña?",
                     color = azulKidCare,

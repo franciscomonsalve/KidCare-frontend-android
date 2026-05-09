@@ -19,6 +19,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kidcare.ui.viewmodel.HistorialViewModel
 
+/**
+ * Pantalla de bitácora de observaciones de un menor.
+ *
+ * Muestra en orden cronológico las observaciones registradas para el menor
+ * identificado por [menorId]. Los datos se cargan desde chatbot-service
+ * mediante [HistorialViewModel.cargarInteracciones] al montar la pantalla.
+ *
+ * @param navController controlador de navegación
+ * @param menorId identificador del menor cuyo historial se quiere ver
+ * @param historialViewModel ViewModel que gestiona la carga del historial
+ */
 @Composable
 fun BitacoraScreen(
     navController: NavController,

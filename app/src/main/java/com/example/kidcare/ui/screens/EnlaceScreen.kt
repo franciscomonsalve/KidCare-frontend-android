@@ -17,6 +17,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 
+/**
+ * Pantalla de generación de enlace/QR para compartir acceso al menor.
+ *
+ * Permite al tutor generar un enlace o código QR de duración limitada (25 minutos)
+ * para compartir con un apoderado o profesional de salud. El canal puede ser
+ * QR, enlace directo u otro método configurable. El countdown se gestiona
+ * localmente con `delay` dentro de una corrutina.
+ *
+ * @param navController controlador de navegación
+ */
 @Composable
 fun EnlaceScreen(navController: NavController) {
 

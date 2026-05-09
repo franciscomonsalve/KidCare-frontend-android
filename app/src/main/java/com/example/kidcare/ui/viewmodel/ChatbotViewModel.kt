@@ -9,6 +9,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel para la pantalla de chatbot/observaciones del menor.
+ *
+ * Gestiona el guardado y la carga de observaciones registradas a través del
+ * microservicio chatbot-service (puerto 8083). Expone [guardado] como señal
+ * booleana de éxito o fallo y [interacciones] con el historial del menor.
+ */
 class ChatbotViewModel : ViewModel() {
 
     private val _guardado = MutableStateFlow<Boolean?>(null)
@@ -17,6 +24,12 @@ class ChatbotViewModel : ViewModel() {
     private val _interacciones = MutableStateFlow<List<InteraccionResponse>>(emptyList())
     val interacciones: StateFlow<List<InteraccionResponse>> = _interacciones
 
+    /**
+     * Guarda una nueva observación para el menor indicado.
+     *
+     * @param idMenor identificador del menor
+     * @param texto texto de la observación registrada por el tutor/delegado
+     */
     fun guardarObservacion(idMenor: Int, texto: String) {
         viewModelScope.launch {
             try {
@@ -30,6 +43,11 @@ class ChatbotViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Carga el historial de observaciones del menor desde chatbot-service.
+     *
+     * @param idMenor identificador del menor
+     */
     fun cargarInteracciones(idMenor: Int) {
         viewModelScope.launch {
             try {
@@ -43,6 +61,7 @@ class ChatbotViewModel : ViewModel() {
         }
     }
 
+    /** Resetea [guardado] a `null` para que la UI quede en estado neutro. */
     fun resetGuardado() {
         _guardado.value = null
     }

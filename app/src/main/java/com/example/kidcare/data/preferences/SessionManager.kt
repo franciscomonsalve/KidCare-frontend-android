@@ -2,6 +2,15 @@ package com.example.kidcare.data.preferences
 
 import android.content.Context
 
+/**
+ * Gestiona la sesión del usuario mediante [SharedPreferences].
+ *
+ * Persiste el token JWT, el email y el rol entre reinicios de la app.
+ * [ApiClient] restaura el token al arrancar [MainActivity] para que las
+ * peticiones autenticadas funcionen sin necesidad de volver a iniciar sesión.
+ *
+ * @param context contexto de la aplicación (preferiblemente `applicationContext`)
+ */
 class SessionManager(context: Context) {
     private val prefs = context.getSharedPreferences("kidcare_prefs", Context.MODE_PRIVATE)
 

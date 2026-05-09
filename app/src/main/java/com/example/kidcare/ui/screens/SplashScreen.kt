@@ -21,6 +21,16 @@ import com.example.kidcare.data.preferences.SessionManager
 import com.example.kidcare.navigation.Rutas
 import kotlinx.coroutines.delay
 
+/**
+ * Pantalla de presentación (splash) que se muestra al iniciar la aplicación.
+ *
+ * Espera 2 segundos mostrando el logo y el nombre de la app, luego consulta
+ * [SessionManager] para decidir si el usuario ya tiene sesión activa:
+ * - Tiene token → navega a [HomeScreen] (sin dejar la splash en la pila).
+ * - No tiene token → navega a [LoginScreen] (sin dejar la splash en la pila).
+ *
+ * @param navController controlador de navegación
+ */
 @Composable
 fun SplashScreen(navController: NavController) {
     val context = LocalContext.current

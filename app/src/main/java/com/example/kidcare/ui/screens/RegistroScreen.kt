@@ -22,6 +22,20 @@ import com.example.kidcare.navigation.Rutas
 import com.example.kidcare.ui.viewmodel.AuthState
 import com.example.kidcare.ui.viewmodel.AuthViewModel
 
+/**
+ * Pantalla de registro de nuevo usuario.
+ *
+ * Permite crear una cuenta con rol **TUTOR** (padre/tutor del menor) o **DELEGADO**
+ * (apoderado con acceso de solo lectura, invitado posteriormente por un tutor).
+ * Valida que las contraseñas coincidan y que se acepten los términos antes de
+ * habilitar el botón de registro.
+ *
+ * Al completar el registro con éxito ([AuthState.Success]) navega a [HomeScreen]
+ * y elimina el flujo de autenticación de la pila de retroceso.
+ *
+ * @param navController controlador de navegación
+ * @param authViewModel ViewModel compartido de autenticación (inyectado por defecto)
+ */
 @Composable
 fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     var verContrasena by remember { mutableStateOf(false) }

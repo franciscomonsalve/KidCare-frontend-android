@@ -1,20 +1,68 @@
 package com.example.kidcare.data.model
 
-// --- Auth ---
+// ─── Autenticación ───────────────────────────────────────────────────────────
+
+/** Cuerpo de la petición POST /api/auth/login */
 data class LoginRequest(val email: String, val password: String)
-data class RegistroRequest(val nombreCompleto: String, val email: String, val password: String, val aceptaTerminos: Boolean, val rolNombre: String = "TUTOR")
-data class DelegadoVincularRequest(val emailDelegado: String, val idMenor: Int)
+
+/**
+ * Cuerpo de la petición POST /api/auth/registro.
+ * @param rolNombre "TUTOR" (por defecto) o "DELEGADO"
+ */
+data class RegistroRequest(
+    val nombreCompleto: String,
+    val email: String,
+    val password: String,
+    val aceptaTerminos: Boolean,
+    val rolNombre: String = "TUTOR"
+)
+
+/** Respuesta de login y registro: token JWT + email + rol del usuario */
 data class AuthResponse(val token: String, val email: String, val rol: String)
 
-// --- Menores ---
-data class MenorResponse(val idMenor: Int, val nombre: String, val fechaNacimiento: String?, val sexo: String?)
+/** Cuerpo de la petición POST /api/auth/recuperar */
+data class RecuperarPasswordRequest(val email: String)
+
+/**
+ * Cuerpo de la petición POST /api/auth/restablecer.
+ * @param token UUID recibido por correo electrónico
+ */
+data class RestablecerPasswordRequest(val token: String, val nuevaPassword: String)
+
+// ─── Menores ─────────────────────────────────────────────────────────────────
+
+/** Respuesta al listar o crear un menor */
+data class MenorResponse(
+    val idMenor: Int,
+    val nombre: String,
+    val fechaNacimiento: String?,
+    val sexo: String?
+)
+
+/** Cuerpo de la petición POST /api/menores */
 data class MenorRequest(val nombre: String, val fechaNacimiento: String, val sexo: String)
 
-// --- Historial ---
-data class HistorialResponse(val idHistorial: Int, val idMenor: Int, val fecha: String?, val resumen: String)
+// ─── Delegados ───────────────────────────────────────────────────────────────
+
+/** Cuerpo de POST /api/delegados/vincular: vincula un apoderado a un menor */
+data class DelegadoVincularRequest(val emailDelegado: String, val idMenor: Int)
+
+// ─── Historial ───────────────────────────────────────────────────────────────
+
+/** Registro de historial clínico de un menor */
+data class HistorialResponse(
+    val idHistorial: Int,
+    val idMenor: Int,
+    val fecha: String?,
+    val resumen: String
+)
+
+/** Cuerpo de POST /api/historial */
 data class HistorialRequest(val idMenor: Int, val resumen: String)
 
-// --- Interacciones (chatbot) ---
+// ─── Interacciones (chatbot) ──────────────────────────────────────────────────
+
+/** Observación registrada a través del chatbot */
 data class InteraccionResponse(
     val id: String,
     val idMenor: Int,
@@ -24,4 +72,11 @@ data class InteraccionResponse(
     val editado: Boolean?,
     val fallback: Boolean?
 )
-data class InteraccionRequest(val idMenor: Int, val observaciones: String, val origen: String = "movil", val fallback: Boolean = false)
+
+/** Cuerpo de POST /api/interacciones */
+data class InteraccionRequest(
+    val idMenor: Int,
+    val observaciones: String,
+    val origen: String = "movil",
+    val fallback: Boolean = false
+)

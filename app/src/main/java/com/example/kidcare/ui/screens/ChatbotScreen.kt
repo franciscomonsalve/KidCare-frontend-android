@@ -20,8 +20,20 @@ import androidx.navigation.NavController
 import com.example.kidcare.ui.viewmodel.ChatbotViewModel
 import kotlinx.coroutines.launch
 
+/** Representa un mensaje en la interfaz de chat con su autor (usuario o sistema). */
 data class Mensaje(val texto: String, val esUsuario: Boolean)
 
+/**
+ * Pantalla de registro de observaciones en formato de chat.
+ *
+ * Permite al usuario escribir una observación sobre el menor y enviarla al
+ * chatbot-service mediante [ChatbotViewModel.guardarObservacion]. También carga
+ * el historial previo de observaciones para el menor al iniciar la pantalla.
+ *
+ * @param navController controlador de navegación
+ * @param menorId identificador del menor al que se registra la observación
+ * @param chatbotViewModel ViewModel que gestiona el envío y carga de observaciones
+ */
 @Composable
 fun ChatbotScreen(
     navController: NavController,

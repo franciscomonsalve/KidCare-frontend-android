@@ -9,6 +9,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * Estados posibles para operaciones de creación de menores.
+ *
+ * - [Idle]: sin operación en curso
+ * - [Loading]: petición en progreso
+ * - [Success]: menor creado correctamente
+ * - [Error]: operación fallida con mensaje descriptivo
+ */
 sealed class MenorState {
     object Idle : MenorState()
     object Loading : MenorState()
@@ -16,6 +24,13 @@ sealed class MenorState {
     data class Error(val message: String) : MenorState()
 }
 
+/**
+ * ViewModel que gestiona la lista de menores vinculados al usuario autenticado.
+ *
+ * Expone [menores] con la lista actualizada y [crearState] para que la UI de
+ * creación reaccione al resultado. Instanciado en [NavGraph] y compartido entre
+ * [HomeScreen] y [AgregarMenorScreen] para evitar recargas innecesarias.
+ */
 class MenorViewModel : ViewModel() {
 
     private val _menores = MutableStateFlow<List<MenorResponse>>(emptyList())
@@ -27,6 +42,7 @@ class MenorViewModel : ViewModel() {
     private val _crearState = MutableStateFlow<MenorState>(MenorState.Idle)
     val crearState: StateFlow<MenorState> = _crearState
 
+    /** Carga la lista de menores del usuario autenticado desde el servidor. */
     fun cargarMenores() {
         viewModelScope.launch {
             _loading.value = true
@@ -42,6 +58,14 @@ class MenorViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Crea un nuevo perfil de menor para el tutor autenticado.
+     * Solo disponible para usuarios con rol TUTOR o ADMIN.
+     *
+     * @param nombre nombre completo del menor
+     * @param fechaNacimiento fecha en formato ISO 8601 (yyyy-MM-dd)
+     * @param sexo "M" (masculino) o "F" (femenino)
+     */
     fun crearMenor(nombre: String, fechaNacimiento: String, sexo: String) {
         viewModelScope.launch {
             _crearState.value = MenorState.Loading
@@ -61,10 +85,16 @@ class MenorViewModel : ViewModel() {
         }
     }
 
+    /** Resetea [crearState] a [MenorState.Idle] para limpiar el formulario. */
     fun resetCrearState() {
         _crearState.value = MenorState.Idle
     }
 
+    /**
+     * Elimina un perfil de menor. Solo disponible para TUTOR o ADMIN.
+     *
+     * @param id identificador del menor a eliminar
+     */
     fun eliminarMenor(id: Int) {
         viewModelScope.launch {
             try {

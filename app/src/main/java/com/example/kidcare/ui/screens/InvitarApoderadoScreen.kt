@@ -20,6 +20,19 @@ import com.example.kidcare.ui.viewmodel.DelegadoViewModel
 import com.example.kidcare.ui.viewmodel.MenorViewModel
 import com.example.kidcare.ui.viewmodel.VincularState
 
+/**
+ * Pantalla para vincular un apoderado (DELEGADO) a un menor.
+ *
+ * El tutor ingresa el correo electrónico del apoderado y selecciona el menor
+ * al que desea darle acceso. Al confirmar, llama a [DelegadoViewModel.vincular]
+ * que invoca el endpoint `POST /api/delegados/vincular` del backend.
+ *
+ * Solo accesible para usuarios con rol TUTOR o ADMIN.
+ *
+ * @param navController controlador de navegación
+ * @param menorViewModel ViewModel que provee la lista de menores para el selector
+ * @param delegadoViewModel ViewModel que gestiona la operación de vinculación
+ */
 @Composable
 fun InvitarApoderadoScreen(
     navController: NavController,
