@@ -136,7 +136,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                 )
                 OutlinedTextField(
                     value = contrasenaActual,
-                    onValueChange = { contrasenaActual = it },
+                    onValueChange = { contrasenaActual = it.filter { c -> !c.isWhitespace() } },
                     placeholder = { Text("••••••••", color = Color(0xFF9CA3AF)) },
                     visualTransformation = if (verActual) VisualTransformation.None
                     else PasswordVisualTransformation(),
@@ -167,7 +167,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                 )
                 OutlinedTextField(
                     value = contrasenaNueva,
-                    onValueChange = { contrasenaNueva = it },
+                    onValueChange = { contrasenaNueva = it.filter { c -> !c.isWhitespace() } },
                     placeholder = { Text("Mínimo 8 caracteres", color = Color(0xFF9CA3AF)) },
                     visualTransformation = if (verNueva) VisualTransformation.None
                     else PasswordVisualTransformation(),
@@ -234,7 +234,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                 )
                 OutlinedTextField(
                     value = confirmarContrasena,
-                    onValueChange = { confirmarContrasena = it },
+                    onValueChange = { confirmarContrasena = it.filter { c -> !c.isWhitespace() } },
                     placeholder = { Text("Repite la nueva contraseña", color = Color(0xFF9CA3AF)) },
                     visualTransformation = if (verConfirmar) VisualTransformation.None
                     else PasswordVisualTransformation(),

@@ -205,7 +205,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp))
                     OutlinedTextField(
                         value = contrasenaNueva,
-                        onValueChange = { contrasenaNueva = it },
+                        onValueChange = { contrasenaNueva = it.filter { c -> !c.isWhitespace() } },
                         placeholder = { Text("Mínimo 8 caracteres", color = Color(0xFF9CA3AF)) },
                         visualTransformation = if (verNueva) VisualTransformation.None
                         else PasswordVisualTransformation(),
@@ -231,7 +231,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp))
                     OutlinedTextField(
                         value = confirmarNueva,
-                        onValueChange = { confirmarNueva = it },
+                        onValueChange = { confirmarNueva = it.filter { c -> !c.isWhitespace() } },
                         placeholder = { Text("Repite la contraseña", color = Color(0xFF9CA3AF)) },
                         visualTransformation = if (verConfirmar) VisualTransformation.None
                         else PasswordVisualTransformation(),
@@ -360,6 +360,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         isError = correoError,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = azulKidCare,
                             unfocusedBorderColor = Color(0xFFE5E7EB),
@@ -377,7 +378,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
 
                     Button(
                         onClick = {
-                            if (correo.isBlank() || !correo.contains("@")) {
+                            if (!Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$").matches(correo)) {
                                 correoError = true
                             } else {
                                 correoEnviado = true

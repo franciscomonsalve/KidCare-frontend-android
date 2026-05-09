@@ -3,6 +3,7 @@ package com.example.kidcare.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -108,6 +110,7 @@ fun LoginScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = azulKidCare,
                             unfocusedBorderColor = Color(0xFFE5E7EB)
@@ -126,7 +129,7 @@ fun LoginScreen(navController: NavController) {
                     )
                     OutlinedTextField(
                         value = contrasena,
-                        onValueChange = { contrasena = it; errorMsg = "" },
+                        onValueChange = { contrasena = it.filter { c -> !c.isWhitespace() }; errorMsg = "" },
                         placeholder = { Text("••••••••••", color = Color(0xFF9CA3AF)) },
                         visualTransformation = if (verContrasena) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
