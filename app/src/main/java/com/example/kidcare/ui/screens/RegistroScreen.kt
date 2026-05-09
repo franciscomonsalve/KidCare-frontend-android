@@ -41,7 +41,7 @@ fun RegistroScreen(navController: NavController, authViewModel: AuthViewModel = 
 
     var nombre      by remember { mutableStateOf("") }
     var apellidos   by remember { mutableStateOf("") }
-    var telefono    by remember { mutableStateOf("") }
+    var telefono    by remember { mutableStateOf("+569") }
     var correo      by remember { mutableStateOf("") }
     var contrasena  by remember { mutableStateOf("") }
     var confirmar   by remember { mutableStateOf("") }

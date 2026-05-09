@@ -53,7 +53,7 @@ fun AgregarMenorScreen(
     }
 
     val puedeGuardar = nombre.isNotBlank() &&
-            fechaNacimiento.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) &&
+            fechaNacimiento.matches(Regex("\\d{2}/\\d{2}/\\d{4}")) &&
             sexo.isNotBlank() &&
             crearState !is MenorState.Loading
 
@@ -129,15 +129,24 @@ fun AgregarMenorScreen(
             Label("FECHA DE NACIMIENTO")
             OutlinedTextField(
                 value = fechaNacimiento,
-                onValueChange = { fechaNacimiento = it },
-                placeholder = { Text("AAAA-MM-DD  (ej: 2020-05-15)", color = Color(0xFF9CA3AF)) },
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }.take(8)
+                    val formatted = buildString {
+                        digits.forEachIndexed { i, c ->
+                            if (i == 2 || i == 4) append('/')
+                            append(c)
+                        }
+                    }
+                    fechaNacimiento = formatted
+                },
+                placeholder = { Text("DD/MM/AAAA  (ej: 15/05/2020)", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                isError = fechaNacimiento.isNotEmpty() && !fechaNacimiento.matches(Regex("\\d{4}-\\d{2}-\\d{2}")),
+                isError = fechaNacimiento.isNotEmpty() && !fechaNacimiento.matches(Regex("\\d{2}/\\d{2}/\\d{4}")),
                 supportingText = {
-                    if (fechaNacimiento.isNotEmpty() && !fechaNacimiento.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
-                        Text("Formato requerido: AAAA-MM-DD", color = Color(0xFFB71C1C))
+                    if (fechaNacimiento.isNotEmpty() && !fechaNacimiento.matches(Regex("\\d{2}/\\d{2}/\\d{4}"))) {
+                        Text("Formato requerido: DD/MM/AAAA", color = Color(0xFFB71C1C))
                     }
                 },
                 enabled = crearState !is MenorState.Loading
@@ -179,11 +188,9 @@ fun AgregarMenorScreen(
             // Botón guardar
             Button(
                 onClick = {
-                    menorViewModel.crearMenor(
-                        nombre.trim(),
-                        fechaNacimiento.trim(),
-                        sexo.lowercase()
-                    )
+                    val partes = fechaNacimiento.split("/")
+                    val fechaBackend = "${partes[2]}-${partes[1]}-${partes[0]}"
+                    menorViewModel.crearMenor(nombre.trim(), fechaBackend, sexo.lowercase())
                 },
                 modifier = Modifier
                     .fillMaxWidth()
