@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -19,7 +20,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.AuthRepository
+import com.example.kidcare.data.SessionManager
+import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.model.RegistroRequest
 import com.example.kidcare.navigation.Rutas
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegistroScreen(navController: NavController) {
@@ -28,12 +34,19 @@ fun RegistroScreen(navController: NavController) {
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
 
+    val context        = LocalContext.current
+    val scope          = rememberCoroutineScope()
+    val sessionManager = remember { SessionManager(context) }
+    val repository     = remember { AuthRepository(RetrofitClient.api) }
+
     var correo      by remember { mutableStateOf("") }
     var contrasena  by remember { mutableStateOf("") }
     var confirmar   by remember { mutableStateOf("") }
     var aceptoTerminos by remember { mutableStateOf(false) }
     var nombre    by remember { mutableStateOf("") }
     var telefono  by remember { mutableStateOf("") }
+    var cargando  by remember { mutableStateOf(false) }
+    var errorMsg  by remember { mutableStateOf("") }
 
 
 
@@ -163,7 +176,7 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = nombre,
-                onValueChange = { nombre = it },
+                onValueChange = { nombre = it; errorMsg = "" },
                 placeholder = { Text("María González", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -205,7 +218,7 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = correo,
-                onValueChange = { correo = it },
+                onValueChange = { correo = it; errorMsg = "" },
                 placeholder = { Text("tu@correo.com", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -225,7 +238,7 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = contrasena,
-                onValueChange = { contrasena = it },
+                onValueChange = { contrasena = it; errorMsg = "" },
                 placeholder = { Text("Mínimo 8 caracteres", color = Color(0xFF9CA3AF)) },
                 visualTransformation = if (verContrasena) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -248,7 +261,7 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = confirmar,
-                onValueChange = { confirmar = it },
+                onValueChange = { confirmar = it; errorMsg = "" },
                 placeholder = { Text("Repite tu contraseña", color = Color(0xFF9CA3AF)) },
                 visualTransformation = if (verConfirmar) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -283,23 +296,71 @@ fun RegistroScreen(navController: NavController) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (errorMsg.isNotEmpty()) {
+                Text(
+                    text = errorMsg,
+                    color = Color(0xFFDC2626),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Botón crear cuenta
             Button(
-                onClick = { navController.navigate(Rutas.HOME) },
+                onClick = {
+                    if (contrasena != confirmar) {
+                        errorMsg = "Las contraseñas no coinciden"
+                        return@Button
+                    }
+                    scope.launch {
+                        cargando = true
+                        errorMsg = ""
+                        val result = repository.registro(
+                            RegistroRequest(
+                                nombreCompleto = nombre.trim(),
+                                email = correo.trim(),
+                                password = contrasena,
+                                telefono = telefono.ifBlank { null },
+                                aceptaTerminos = aceptoTerminos
+                            )
+                        )
+                        result.onSuccess { auth ->
+                            sessionManager.saveToken(auth.token)
+                            sessionManager.saveRol(auth.rol)
+                            sessionManager.saveEmail(auth.email)
+                            navController.navigate(Rutas.HOME) {
+                                popUpTo(Rutas.REGISTRO) { inclusive = true }
+                            }
+                        }.onFailure { e ->
+                            errorMsg = e.message ?: "Error al crear la cuenta"
+                        }
+                        cargando = false
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(13.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                enabled = aceptoTerminos
+                enabled = aceptoTerminos && !cargando && nombre.isNotBlank() && correo.isNotBlank() && contrasena.isNotBlank()
             ) {
-                Text(
-                    text = "Crear cuenta",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (cargando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Crear cuenta",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -16,7 +17,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.AuthRepository
+import com.example.kidcare.data.SessionManager
+import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.model.LoginRequest
 import com.example.kidcare.navigation.Rutas
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -24,9 +30,16 @@ fun LoginScreen(navController: NavController) {
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
 
-    var correo       by remember { mutableStateOf("") }
-    var contrasena   by remember { mutableStateOf("") }
+    val context       = LocalContext.current
+    val scope         = rememberCoroutineScope()
+    val sessionManager = remember { SessionManager(context) }
+    val repository     = remember { AuthRepository(RetrofitClient.api) }
+
+    var correo        by remember { mutableStateOf("") }
+    var contrasena    by remember { mutableStateOf("") }
     var verContrasena by remember { mutableStateOf(false) }
+    var cargando      by remember { mutableStateOf(false) }
+    var errorMsg      by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -90,7 +103,7 @@ fun LoginScreen(navController: NavController) {
                     )
                     OutlinedTextField(
                         value = correo,
-                        onValueChange = { correo = it },
+                        onValueChange = { correo = it; errorMsg = "" },
                         placeholder = { Text("tu@correo.com", color = Color(0xFF9CA3AF)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -113,7 +126,7 @@ fun LoginScreen(navController: NavController) {
                     )
                     OutlinedTextField(
                         value = contrasena,
-                        onValueChange = { contrasena = it },
+                        onValueChange = { contrasena = it; errorMsg = "" },
                         placeholder = { Text("••••••••••", color = Color(0xFF9CA3AF)) },
                         visualTransformation = if (verContrasena) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
@@ -134,23 +147,51 @@ fun LoginScreen(navController: NavController) {
                         Text(text = "¿Olvidaste tu contraseña?", color = azulKidCare, fontSize = 14.sp)
                     }
 
-                    // BOTÓN INGRESAR (Lógica de redirección por correo)
+                    if (errorMsg.isNotEmpty()) {
+                        Text(
+                            text = errorMsg,
+                            color = Color(0xFFDC2626),
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
                     Button(
                         onClick = {
-                            // Cambia este correo por el que quieras que sea DELEGADO
-                            val correoDePruebaDelegado = "delegado@kidcare.cl"
-
-                            if (correo.lowercase() == correoDePruebaDelegado) {
-                                navController.navigate(Rutas.HOME_DELEGADO)
-                            } else {
-                                navController.navigate(Rutas.HOME)
+                            scope.launch {
+                                cargando = true
+                                errorMsg = ""
+                                val result = repository.login(LoginRequest(correo.trim(), contrasena))
+                                result.onSuccess { auth ->
+                                    sessionManager.saveToken(auth.token)
+                                    sessionManager.saveRol(auth.rol)
+                                    sessionManager.saveEmail(auth.email)
+                                    navController.navigate(
+                                        if (auth.rol == "TUTOR" || auth.rol == "ADMIN") Rutas.HOME
+                                        else Rutas.HOME_DELEGADO
+                                    ) {
+                                        popUpTo(Rutas.LOGIN) { inclusive = true }
+                                    }
+                                }.onFailure { e ->
+                                    errorMsg = e.message ?: "Error al iniciar sesión"
+                                }
+                                cargando = false
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+                        colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
+                        enabled = !cargando && correo.isNotBlank() && contrasena.isNotBlank()
                     ) {
-                        Text("🔑 Ingresar", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        if (cargando) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("🔑 Ingresar", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
