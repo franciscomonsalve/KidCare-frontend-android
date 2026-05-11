@@ -1,10 +1,14 @@
 package com.example.kidcare.ui.screens
 
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -26,6 +31,24 @@ import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.RegistroRequest
 import com.example.kidcare.navigation.Rutas
 import kotlinx.coroutines.launch
+
+data class Pais(val nombre: String, val bandera: String, val codigo: String, val maxDigitos: Int)
+
+val PAISES = listOf(
+    Pais("Chile",          "🇨🇱", "+56",  9),
+    Pais("Argentina",      "🇦🇷", "+54", 10),
+    Pais("Colombia",       "🇨🇴", "+57", 10),
+    Pais("Perú",           "🇵🇪", "+51",  9),
+    Pais("México",         "🇲🇽", "+52", 10),
+    Pais("Ecuador",        "🇪🇨", "+593", 9),
+    Pais("Bolivia",        "🇧🇴", "+591", 8),
+    Pais("Uruguay",        "🇺🇾", "+598", 9),
+    Pais("Paraguay",       "🇵🇾", "+595", 9),
+    Pais("Venezuela",      "🇻🇪", "+58", 10),
+    Pais("Brasil",         "🇧🇷", "+55", 11),
+    Pais("España",         "🇪🇸", "+34",  9),
+    Pais("Estados Unidos", "🇺🇸", "+1",  10),
+)
 
 @Composable
 fun RegistroScreen(navController: NavController) {
@@ -44,7 +67,9 @@ fun RegistroScreen(navController: NavController) {
     var confirmar   by remember { mutableStateOf("") }
     var aceptoTerminos by remember { mutableStateOf(false) }
     var nombre    by remember { mutableStateOf("") }
-    var telefono  by remember { mutableStateOf("") }
+    var numeroCelular    by remember { mutableStateOf("") }
+    var paisSeleccionado by remember { mutableStateOf(PAISES[0]) }
+    var mostrarSelectorPais by remember { mutableStateOf(false) }
     var cargando  by remember { mutableStateOf(false) }
     var errorMsg  by remember { mutableStateOf("") }
 
@@ -194,17 +219,66 @@ fun RegistroScreen(navController: NavController) {
                 letterSpacing = 0.6.sp,
                 modifier = Modifier.padding(bottom = 6.dp)
             )
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it },
-                placeholder = { Text("+56 9 1234 5678", color = Color(0xFF9CA3AF)) },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = { mostrarSelectorPais = true },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.height(56.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF374151))
+                ) {
+                    Text("${paisSeleccionado.bandera} ${paisSeleccionado.codigo}", fontSize = 14.sp)
+                    Text(" ▼", fontSize = 10.sp, color = Color(0xFF9CA3AF))
+                }
+                OutlinedTextField(
+                    value = numeroCelular,
+                    onValueChange = { nueva ->
+                        val soloDigitos = nueva.filter { it.isDigit() }
+                        if (soloDigitos.length <= paisSeleccionado.maxDigitos) numeroCelular = soloDigitos
+                    },
+                    placeholder = { Text("9 1234 5678", color = Color(0xFF9CA3AF)) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = azulKidCare,
+                        unfocusedBorderColor = Color(0xFFE5E7EB)
+                    )
                 )
-            )
+            }
+
+            if (mostrarSelectorPais) {
+                AlertDialog(
+                    onDismissRequest = { mostrarSelectorPais = false },
+                    title = { Text("Selecciona tu país", fontWeight = FontWeight.Bold) },
+                    text = {
+                        LazyColumn {
+                            items(PAISES) { pais ->
+                                TextButton(
+                                    onClick = {
+                                        paisSeleccionado = pais
+                                        numeroCelular = ""
+                                        mostrarSelectorPais = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        "${pais.bandera}  ${pais.nombre}  (${pais.codigo})",
+                                        modifier = Modifier.fillMaxWidth(),
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {}
+                )
+            }
 
             Spacer(modifier = Modifier.height(14.dp))
             // Correo
@@ -222,7 +296,8 @@ fun RegistroScreen(navController: NavController) {
                 placeholder = { Text("tu@correo.com", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -238,7 +313,7 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = contrasena,
-                onValueChange = { contrasena = it; errorMsg = "" },
+                onValueChange = { contrasena = it.filter { c -> !c.isWhitespace() }; errorMsg = "" },
                 placeholder = { Text("Mínimo 8 caracteres", color = Color(0xFF9CA3AF)) },
                 visualTransformation = if (verContrasena) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -261,7 +336,7 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = confirmar,
-                onValueChange = { confirmar = it; errorMsg = "" },
+                onValueChange = { confirmar = it.filter { c -> !c.isWhitespace() }; errorMsg = "" },
                 placeholder = { Text("Repite tu contraseña", color = Color(0xFF9CA3AF)) },
                 visualTransformation = if (verConfirmar) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -324,16 +399,26 @@ fun RegistroScreen(navController: NavController) {
                                 nombreCompleto = nombre.trim(),
                                 email = correo.trim(),
                                 password = contrasena,
-                                telefono = telefono.ifBlank { null },
+                                telefono = numeroCelular.ifBlank { null }?.let { "${paisSeleccionado.codigo}$it" },
                                 aceptaTerminos = aceptoTerminos
                             )
                         )
                         result.onSuccess { auth ->
-                            sessionManager.saveToken(auth.token)
-                            sessionManager.saveRol(auth.rol)
-                            sessionManager.saveEmail(auth.email)
-                            navController.navigate(Rutas.HOME) {
-                                popUpTo(Rutas.REGISTRO) { inclusive = true }
+                            val token = auth.token
+                            val rol   = auth.rol
+                            val email = auth.email
+                            if (!token.isNullOrEmpty() && !rol.isNullOrEmpty() && !email.isNullOrEmpty()) {
+                                sessionManager.saveToken(token)
+                                sessionManager.saveRol(rol)
+                                sessionManager.saveEmail(email)
+                                auth.idUsuario?.let { sessionManager.saveIdUsuario(it) }
+                                // Guardar nombre: del backend si viene, sino del formulario
+                                val nombreGuardar = auth.nombreCompleto ?: nombre.trim()
+                                sessionManager.saveNombreCompleto(nombreGuardar)
+                                RetrofitClient.jwtToken = token
+                                navController.navigate(Rutas.HOME) {
+                                    popUpTo(Rutas.REGISTRO) { inclusive = true }
+                                }
                             }
                         }.onFailure { e ->
                             errorMsg = e.message ?: "Error al crear la cuenta"

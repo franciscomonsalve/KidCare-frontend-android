@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,10 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.SessionManager
+import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.model.InteraccionResponse
+import com.example.kidcare.data.model.MenorResponse
 import com.example.kidcare.navigation.Rutas
 
 @Composable
@@ -25,7 +31,62 @@ fun HomeDelegadoScreen(navController: NavController) {
     val verdeOscuro    = Color(0xFF065F7A)
     val verdeClaro     = Color(0xFF0EA5C9)
 
-    val menorId = "1"
+    val context = LocalContext.current
+    val session = remember { SessionManager(context) }
+
+    val email   = session.getEmail() ?: "Delegado"
+    val nombre  = session.getNombreCompleto() ?: email.substringBefore("@")
+
+    // Cargar menores asignados al delegado
+    val menores = remember { mutableStateListOf<MenorResponse>() }
+    var cargandoMenores by remember { mutableStateOf(false) }
+    var menorSeleccionado by remember { mutableStateOf<MenorResponse?>(null) }
+
+    // Interacciones recientes
+    val interacciones = remember { mutableStateListOf<InteraccionResponse>() }
+    var cargandoInteracciones by remember { mutableStateOf(false) }
+
+    // Cargar menores
+    LaunchedEffect(Unit) {
+        cargandoMenores = true
+        val cached = session.getMenores()
+        if (cached.isNotEmpty()) {
+            menores.clear()
+            menores.addAll(cached)
+            menorSeleccionado = cached.firstOrNull()
+        }
+
+        val result = runCatching { RetrofitClient.api.listarMenores() }
+        result.onSuccess { resp ->
+            if (resp.isSuccessful) {
+                val lista = resp.body() ?: emptyList()
+                menores.clear()
+                menores.addAll(lista)
+                session.saveMenores(lista)
+                if (menorSeleccionado == null && lista.isNotEmpty()) {
+                    menorSeleccionado = lista.first()
+                }
+            }
+        }
+        cargandoMenores = false
+    }
+
+    // Cargar interacciones cuando se selecciona un menor
+    LaunchedEffect(menorSeleccionado?.idMenor) {
+        val id = menorSeleccionado?.idMenor ?: return@LaunchedEffect
+        cargandoInteracciones = true
+        val result = runCatching { RetrofitClient.chatbotApi.listarInteracciones(id) }
+        result.onSuccess { resp ->
+            if (resp.isSuccessful) {
+                interacciones.clear()
+                val lista = resp.body() ?: emptyList()
+                interacciones.addAll(lista.take(3)) // Mostrar solo las 3 más recientes
+            }
+        }
+        cargandoInteracciones = false
+    }
+
+    val menorId = menorSeleccionado?.idMenor?.toString() ?: "0"
 
     LazyColumn(
         modifier = Modifier
@@ -52,7 +113,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                         color = Color.White.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = "Carmen López 👋",
+                        text = "$nombre 👋",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -79,7 +140,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                                     .background(Color(0xFF4ADE80), shape = RoundedCornerShape(50))
                             )
                             Text(
-                                text = "Delegada de Mateo",
+                                text = "Delegado/a de ${menorSeleccionado?.nombre.orEmpty()}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -100,31 +161,35 @@ fun HomeDelegadoScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                Color.White.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    if (cargandoMenores) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else if (menorSeleccionado != null) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Color.White.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(14.dp)
+                                )
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
                         ) {
-                            Text("😊", fontSize = 28.sp)
-                            Column {
-                                Text(
-                                    text = "Mateo",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "10 años",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.7f)
-                                )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(menorSeleccionado!!.emoji ?: "🧒", fontSize = 28.sp)
+                                Column {
+                                    Text(
+                                        text = menorSeleccionado!!.nombre.orEmpty(),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = menorSeleccionado!!.sexo.orEmpty(),
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
                             }
                         }
                     }
@@ -145,7 +210,7 @@ fun HomeDelegadoScreen(navController: NavController) {
             ) {
                 Text("ℹ️", fontSize = 16.sp)
                 Text(
-                    text = "Como delegada puedes registrar y editar interacciones. Solo el tutor puede eliminarlas o generar el enlace para el médico.",
+                    text = "Como delegado/a puedes registrar y editar interacciones. Solo el tutor puede eliminarlas o generar el enlace para el médico.",
                     fontSize = 12.sp,
                     color = Color(0xFF1E3A8A),
                     lineHeight = 18.sp,
@@ -211,7 +276,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                             color = Color(0xFF0F172A)
                         )
                         Text(
-                            text = "7 registros",
+                            text = "${interacciones.size} registros",
                             fontSize = 11.sp,
                             color = Color(0xFF9CA3AF)
                         )
@@ -229,7 +294,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .background(Color.White, shape = RoundedCornerShape(16.dp))
-                    .clickable { }
+                    .clickable { navController.navigate(Rutas.interaccionManual(menorId.toIntOrNull() ?: 0)) }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -280,11 +345,22 @@ fun HomeDelegadoScreen(navController: NavController) {
             }
         }
 
-        // Feed interacciones
-        items(
-            count = 2,
-            itemContent = { index ->
-                val esChatbot = index == 0
+        // Feed interacciones — datos reales
+        if (cargandoInteracciones) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = verdePrincipal, modifier = Modifier.size(24.dp))
+                }
+            }
+        } else if (interacciones.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Text("No hay interacciones registradas.", fontSize = 13.sp, color = Color(0xFF9CA3AF))
+                }
+            }
+        } else {
+            items(interacciones) { obs ->
+                val esChatbot = obs.tipo == "CHATBOT" || obs.origen == "CHATBOT" || obs.fallback == false
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -311,10 +387,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                             color = Color(0xFF0F172A)
                         )
                         Text(
-                            text = if (esChatbot)
-                                "Fiebre 38.5°, decaimiento desde ayer..."
-                            else
-                                "Vómitos noche, sin fiebre en ese momento...",
+                            text = obs.observaciones.orEmpty().take(80) + if ((obs.observaciones?.length ?: 0) > 80) "..." else "",
                             fontSize = 12.sp,
                             color = Color(0xFF6B7280),
                             modifier = Modifier.padding(top = 2.dp)
@@ -342,7 +415,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                                 )
                             }
                             Text(
-                                text = if (esChatbot) "Hoy 08:30" else "Ayer 22:15",
+                                text = obs.fecha.orEmpty(),
                                 fontSize = 11.sp,
                                 color = Color(0xFF9CA3AF)
                             )
@@ -351,7 +424,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                     Text("›", fontSize = 18.sp, color = Color(0xFF9CA3AF))
                 }
             }
-        )
+        }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
 
@@ -368,15 +441,23 @@ fun HomeDelegadoScreen(navController: NavController) {
                     Triple("🏠", "Inicio", true),
                     Triple("📋", "Bitácora", false),
                     Triple("💬", "Chatbot", false),
+                    Triple("⚙️", "Perfil", false),
                     Triple("🚪", "Salir", false),
                 ).forEach { (emoji, label, activo) ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.clickable {
-                            if (label == "Salir") {
-                                navController.navigate(Rutas.LOGIN) {
-                                    popUpTo(0) { inclusive = true }
+                            when (label) {
+                                "Salir" -> {
+                                    session.clear()
+                                    RetrofitClient.jwtToken = null
+                                    navController.navigate(Rutas.LOGIN) {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
+                                "Bitácora" -> navController.navigate("bitacora/$menorId")
+                                "Chatbot" -> navController.navigate("chatbot/$menorId")
+                                "Perfil" -> navController.navigate(Rutas.CONFIGURACION)
                             }
                         }
                     ) {
