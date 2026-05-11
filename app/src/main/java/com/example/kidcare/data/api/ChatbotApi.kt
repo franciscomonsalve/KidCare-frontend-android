@@ -1,6 +1,8 @@
 package com.example.kidcare.data.api
 
 import com.example.kidcare.data.model.*
+import com.example.kidcare.data.model.MensajeChatRequest
+import com.example.kidcare.data.model.RespuestaChatResponse
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -23,4 +25,7 @@ interface ChatbotApi {
 
     @DELETE("api/interacciones/{id}")
     suspend fun eliminarInteraccion(@Path("id") id: String): Response<MessageResponse>
+
+    @POST("api/chat/mensaje")
+    suspend fun enviarMensaje(@Body body: MensajeChatRequest): Response<RespuestaChatResponse>
 }

@@ -89,6 +89,16 @@ data class InteraccionResponse(
 
 data class EditarInteraccionRequest(val observaciones: String)
 
+data class MensajeHistorial(val rol: String, val contenido: String)
+
+data class MensajeChatRequest(
+    val mensaje: String,
+    val sintomas: List<String>,
+    val historial: List<MensajeHistorial>
+)
+
+data class RespuestaChatResponse(val respuesta: String? = null)
+
 // ─── HISTORIAL ────────────────────────────────────────────────────────────────
 
 data class GenerarHistorialRequest(val idMenor: Int, val idInteracciones: List<String>)

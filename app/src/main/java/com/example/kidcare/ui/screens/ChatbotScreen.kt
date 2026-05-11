@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +20,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.InteraccionRequest
+import com.example.kidcare.data.model.MensajeChatRequest
+import com.example.kidcare.data.model.MensajeHistorial
 import com.example.kidcare.data.model.PreguntasRequest
 import com.example.kidcare.navigation.Rutas
 import kotlinx.coroutines.launch
@@ -38,8 +42,12 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
     var textoRefinado    by remember { mutableStateOf("") }
     var cargando         by remember { mutableStateOf(false) }
     var errorMsg         by remember { mutableStateOf("") }
-    var modoManual       by remember { mutableStateOf(false) }
     var guardado         by remember { mutableStateOf(false) }
+    var hayConexionIA    by remember { mutableStateOf(true) }
+
+    val chatMessages = remember { mutableStateListOf<Pair<String, Boolean>>() }
+    var chatInput by remember { mutableStateOf("") }
+    var cargandoChat by remember { mutableStateOf(false) }
 
     val idMenor = menorId.toIntOrNull() ?: 0
 
@@ -53,20 +61,24 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
         result.onSuccess { resp ->
             if (resp.isSuccessful) {
                 preguntas = resp.body()?.preguntas ?: emptyList()
+                hayConexionIA = true
             } else {
                 // Fallback a preguntas predefinidas
                 preguntas = listOf("Fiebre", "Tos", "Dolor de cabeza", "Vómito", "Diarrea", "Irritabilidad", "Inapetencia", "Otro")
+                hayConexionIA = false
             }
         }.onFailure {
-            modoManual = true
-            navController.navigate(Rutas.interaccionManual(idMenor)) {
-                popUpTo(Rutas.chatbot(idMenor)) { inclusive = true }
-            }
+            preguntas = listOf("Fiebre", "Tos", "Dolor de cabeza", "Vómito", "Diarrea", "Irritabilidad", "Inapetencia", "Otro")
+            hayConexionIA = false
         }
         cargando = false
     }
 
-    if (modoManual) return
+    LaunchedEffect(etapa) {
+        if (etapa == 2 && chatMessages.isEmpty()) {
+            chatMessages.add("Hola, soy el asistente de KidCare. Cuéntame con tus palabras: ¿cómo ha estado, desde cuándo y qué intensidad tienen los síntomas?" to true)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(fondoChat)) {
 
@@ -174,34 +186,138 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
             }
 
             etapa == 2 -> {
-                // Etapa 2: Texto libre
-                Column(modifier = Modifier.weight(1f).padding(16.dp)) {
-                    Text("Cuéntame más detalles", fontSize = 15.sp, fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A), modifier = Modifier.padding(bottom = 8.dp))
-                    Text("Síntomas seleccionados: ${sintomasSelect.joinToString(", ")}",
-                        fontSize = 12.sp, color = Color(0xFF6B7280), modifier = Modifier.padding(bottom = 16.dp))
+                if (hayConexionIA) {
+                    // Etapa 2: Chat UI
+                    Column(modifier = Modifier.weight(1f)) {
+                        LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                            items(chatMessages) { (msg, isBot) ->
+                                if (isBot) {
+                                    Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(end = 32.dp)) {
+                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(28.dp).background(azulKidCare, CircleShape).padding(top = 2.dp)) {
+                                            Text("🤖", fontSize = 14.sp)
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Box(modifier = Modifier.background(Color.White, RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)).border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)).padding(12.dp)) {
+                                            Text(msg, fontSize = 13.sp, color = Color(0xFF0F172A), lineHeight = 18.sp)
+                                        }
+                                    }
+                                } else {
+                                    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
+                                        Box(modifier = Modifier.background(azulKidCare, RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp)).padding(12.dp)) {
+                                            Text(msg, fontSize = 13.sp, color = Color.White, lineHeight = 18.sp)
+                                        }
+                                    }
+                                }
+                            }
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                        }
 
-                    OutlinedTextField(
-                        value = textoDetalle,
-                        onValueChange = { textoDetalle = it },
-                        placeholder = { Text("Describe cuándo comenzó, intensidad, etc.", color = Color(0xFF9CA3AF)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp), minLines = 5,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
-                    )
-                }
-                Row(modifier = Modifier.fillMaxWidth().background(Color.White).padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = { etapa = 1 }, modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(14.dp)) { Text("← Atrás") }
-                    Button(onClick = {
-                        textoRefinado = "${sintomasSelect.joinToString(", ")}. $textoDetalle".trim()
-                        etapa = 3
-                    }, modifier = Modifier.weight(1f).height(52.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                        enabled = textoDetalle.isNotBlank()) { Text("Siguiente →") }
+                        // Input row
+                        Row(modifier = Modifier.fillMaxWidth().background(Color.White).padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = chatInput,
+                                onValueChange = { chatInput = it },
+                                placeholder = { Text("Escribe tu respuesta…", fontSize = 13.sp, color = Color(0xFF9CA3AF)) },
+                                modifier = Modifier.weight(1f).height(50.dp),
+                                shape = RoundedCornerShape(25.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFFE5E7EB),
+                                    unfocusedBorderColor = Color(0xFFE5E7EB),
+                                    focusedContainerColor = fondoChat,
+                                    unfocusedContainerColor = fondoChat
+                                )
+                            )
+                            Button(
+                                onClick = {
+                                    if (chatInput.isNotBlank() && !cargandoChat) {
+                                        val mensajeUsuario = chatInput
+                                        chatMessages.add(mensajeUsuario to false)
+                                        textoDetalle += (if (textoDetalle.isEmpty()) "" else "\n") + mensajeUsuario
+                                        chatInput = ""
+                                        scope.launch {
+                                            cargandoChat = true
+                                            val historial = chatMessages.dropLast(1).map { (msg, isBot) ->
+                                                MensajeHistorial(
+                                                    rol = if (isBot) "assistant" else "user",
+                                                    contenido = msg
+                                                )
+                                            }
+                                            val result = runCatching {
+                                                RetrofitClient.chatbotApi.enviarMensaje(
+                                                    MensajeChatRequest(
+                                                        mensaje = mensajeUsuario,
+                                                        sintomas = sintomasSelect,
+                                                        historial = historial
+                                                    )
+                                                )
+                                            }
+                                            result.onSuccess { resp ->
+                                                val texto = if (resp.isSuccessful)
+                                                    resp.body()?.respuesta ?: "¿Puedes contarme más detalles?"
+                                                else "¿Puedes contarme más detalles?"
+                                                chatMessages.add(texto to true)
+                                            }.onFailure {
+                                                chatMessages.add("¿Puedes contarme más detalles?" to true)
+                                            }
+                                            cargandoChat = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.size(44.dp),
+                                shape = CircleShape,
+                                contentPadding = PaddingValues(0.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
+                                enabled = !cargandoChat
+                            ) {
+                                if (cargandoChat)
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                                else
+                                    Text("➤", fontSize = 16.sp, color = Color.White)
+                            }
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth().background(Color.White).padding(start = 16.dp, end = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(onClick = { etapa = 1 }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("← Atrás") }
+                            Button(onClick = {
+                                textoRefinado = "${sintomasSelect.joinToString(", ")}. $textoDetalle".trim()
+                                etapa = 3
+                            }, modifier = Modifier.weight(1f).height(52.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
+                                enabled = textoDetalle.isNotBlank()) { Text("Siguiente →") }
+                        }
+                    }
+                } else {
+                    // Etapa 2: Texto libre (manual fallback)
+                    Column(modifier = Modifier.weight(1f).padding(16.dp)) {
+                        Text("Cuéntame más detalles", fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A), modifier = Modifier.padding(bottom = 8.dp))
+                        Text("Síntomas seleccionados: ${sintomasSelect.joinToString(", ")}",
+                            fontSize = 12.sp, color = Color(0xFF6B7280), modifier = Modifier.padding(bottom = 16.dp))
+    
+                        OutlinedTextField(
+                            value = textoDetalle,
+                            onValueChange = { textoDetalle = it },
+                            placeholder = { Text("Describe cuándo comenzó, intensidad, etc.", color = Color(0xFF9CA3AF)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp), minLines = 5,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                        )
+                    }
+                    Row(modifier = Modifier.fillMaxWidth().background(Color.White).padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { etapa = 1 }, modifier = Modifier.weight(1f).height(52.dp),
+                            shape = RoundedCornerShape(14.dp)) { Text("← Atrás") }
+                        Button(onClick = {
+                            textoRefinado = "${sintomasSelect.joinToString(", ")}. $textoDetalle".trim()
+                            etapa = 3
+                        }, modifier = Modifier.weight(1f).height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
+                            enabled = textoDetalle.isNotBlank()) { Text("Siguiente →") }
+                    }
                 }
             }
 
