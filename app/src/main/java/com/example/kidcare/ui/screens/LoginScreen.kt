@@ -166,14 +166,21 @@ fun LoginScreen(navController: NavController) {
                                 errorMsg = ""
                                 val result = repository.login(LoginRequest(correo.trim(), contrasena))
                                 result.onSuccess { auth ->
-                                    sessionManager.saveToken(auth.token)
-                                    sessionManager.saveRol(auth.rol)
-                                    sessionManager.saveEmail(auth.email)
-                                    navController.navigate(
-                                        if (auth.rol == "TUTOR" || auth.rol == "ADMIN") Rutas.HOME
-                                        else Rutas.HOME_DELEGADO
-                                    ) {
-                                        popUpTo(Rutas.LOGIN) { inclusive = true }
+                                    val token = auth.token
+                                    val rol   = auth.rol
+                                    val email = auth.email
+                                    if (token.isNullOrEmpty() || rol.isNullOrEmpty() || email.isNullOrEmpty()) {
+                                        errorMsg = "Respuesta inválida del servidor"
+                                    } else {
+                                        sessionManager.saveToken(token)
+                                        sessionManager.saveRol(rol)
+                                        sessionManager.saveEmail(email)
+                                        auth.idUsuario?.let { sessionManager.saveIdUsuario(it) }
+                                        RetrofitClient.jwtToken = token
+                                        navController.navigate(
+                                            if (rol == "TUTOR" || rol == "ADMIN") Rutas.HOME
+                                            else Rutas.HOME_DELEGADO
+                                        ) { popUpTo(Rutas.LOGIN) { inclusive = true } }
                                     }
                                 }.onFailure { e ->
                                     errorMsg = e.message ?: "Error al iniciar sesión"

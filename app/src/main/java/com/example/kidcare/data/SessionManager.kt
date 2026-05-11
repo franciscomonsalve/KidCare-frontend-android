@@ -14,5 +14,8 @@ class SessionManager(context: Context) {
     fun saveEmail(email: String) = prefs.edit().putString("email", email).apply()
     fun getEmail(): String? = prefs.getString("email", null)
 
+    fun saveIdUsuario(id: Int) = prefs.edit().putInt("id_usuario", id).apply()
+    fun getIdUsuario(): Int = prefs.getInt("id_usuario", -1)
+
     fun clear() = prefs.edit().clear().apply()
 }

@@ -404,11 +404,18 @@ fun RegistroScreen(navController: NavController) {
                             )
                         )
                         result.onSuccess { auth ->
-                            sessionManager.saveToken(auth.token)
-                            sessionManager.saveRol(auth.rol)
-                            sessionManager.saveEmail(auth.email)
-                            navController.navigate(Rutas.HOME) {
-                                popUpTo(Rutas.REGISTRO) { inclusive = true }
+                            val token = auth.token
+                            val rol   = auth.rol
+                            val email = auth.email
+                            if (!token.isNullOrEmpty() && !rol.isNullOrEmpty() && !email.isNullOrEmpty()) {
+                                sessionManager.saveToken(token)
+                                sessionManager.saveRol(rol)
+                                sessionManager.saveEmail(email)
+                                auth.idUsuario?.let { sessionManager.saveIdUsuario(it) }
+                                RetrofitClient.jwtToken = token
+                                navController.navigate(Rutas.HOME) {
+                                    popUpTo(Rutas.REGISTRO) { inclusive = true }
+                                }
                             }
                         }.onFailure { e ->
                             errorMsg = e.message ?: "Error al crear la cuenta"
