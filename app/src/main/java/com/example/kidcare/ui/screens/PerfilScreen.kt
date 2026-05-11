@@ -11,10 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.SessionManager
+import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.model.MenorResponse
 import com.example.kidcare.navigation.Rutas
 
 @Composable
@@ -22,6 +26,38 @@ fun PerfilScreen(navController: NavController) {
 
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
+    val context     = LocalContext.current
+    val session     = remember { SessionManager(context) }
+
+    // Datos reales del usuario desde sesión
+    val nombreUsuario = session.getNombreCompleto() ?: session.getEmail()?.substringBefore("@") ?: "Usuario"
+    val emailUsuario  = session.getEmail() ?: ""
+    val rolUsuario    = session.getRol() ?: "TUTOR"
+
+    // Menores cacheados en sesión
+    val menores = remember { mutableStateListOf<MenorResponse>() }
+    var cargando by remember { mutableStateOf(false) }
+
+    // Cargar menores: primero intentar caché, luego API
+    LaunchedEffect(Unit) {
+        val cached = session.getMenores()
+        if (cached.isNotEmpty()) {
+            menores.clear()
+            menores.addAll(cached)
+        } else {
+            cargando = true
+            val result = runCatching { RetrofitClient.api.listarMenores() }
+            result.onSuccess { resp ->
+                if (resp.isSuccessful) {
+                    val lista = resp.body() ?: emptyList()
+                    menores.clear()
+                    menores.addAll(lista)
+                    session.saveMenores(lista)
+                }
+            }
+            cargando = false
+        }
+    }
 
     var mostrarDialogoCerrar by remember { mutableStateOf(false) }
 
@@ -35,6 +71,8 @@ fun PerfilScreen(navController: NavController) {
                 TextButton(
                     onClick = {
                         mostrarDialogoCerrar = false
+                        session.clear()
+                        RetrofitClient.jwtToken = null
                         navController.navigate(Rutas.LOGIN) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -57,7 +95,7 @@ fun PerfilScreen(navController: NavController) {
             .background(Color(0xFFF2F5FB))
     ) {
 
-        // HEADER: Perfil del Usuario
+        // HEADER: Perfil del Usuario — datos reales
         item {
             Box(
                 modifier = Modifier
@@ -81,13 +119,13 @@ fun PerfilScreen(navController: NavController) {
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Carlos Rodríguez",
+                        text = nombreUsuario,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "carlos@correo.com",
+                        text = emailUsuario,
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.65f)
                     )
@@ -97,7 +135,7 @@ fun PerfilScreen(navController: NavController) {
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
-                            text = "TUTOR",
+                            text = rolUsuario,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -124,32 +162,39 @@ fun PerfilScreen(navController: NavController) {
             }
         }
 
-        // SECCIÓN: Mis Hijos (CORREGIDA)
+        // SECCIÓN: Mis Hijos — datos reales desde API/caché
         item {
             SeccionTitulo("MIS HIJOS")
             CardContenedor {
-                // Lista dinámica de hijos
-                val misHijos = listOf(
-                    Triple("👧", "Amalia", "5 años"),
-                    Triple("👦", "Mateo", "10 años")
-                )
+                if (cargando) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = azulKidCare, modifier = Modifier.size(24.dp))
+                    }
+                } else if (menores.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text("No hay menores registrados.", fontSize = 13.sp, color = Color(0xFF9CA3AF))
+                    }
+                } else {
+                    menores.forEachIndexed { index, menor ->
+                        FilaMenu(
+                            emoji = menor.emoji ?: "🧒",
+                            titulo = "${menor.nombre.orEmpty()} · ${menor.sexo.orEmpty()}",
+                            onClick = { navController.navigate(Rutas.perfilMenor(menor.idMenor)) }
+                        )
 
-                misHijos.forEachIndexed { index, (emoji, nombre, edad) ->
-                    // Fila del Niño/a
-                    FilaMenu(emoji, "$nombre · $edad", onClick = { /* Ir a detalle */ })
+                        DividerPersonalizado()
 
-                    DividerPersonalizado()
+                        // Fila de Delegados vinculada al niño
+                        FilaMenu(
+                            emoji = "👥",
+                            titulo = "Delegados de ${menor.nombre.orEmpty()}",
+                            onClick = { navController.navigate(Rutas.delegados(menor.idMenor)) }
+                        )
 
-                    // Fila de Delegados vinculada al niño
-                    FilaMenu(
-                        emoji = "👥",
-                        titulo = "Delegados de $nombre",
-                        onClick = { navController.navigate("delegados/${index + 1}") }
-                    )
-
-                    // Solo poner un separador visual fuerte si hay más hijos después
-                    if (index < misHijos.size - 1) {
-                        Divider(color = Color(0xFFF2F5FB), thickness = 6.dp)
+                        // Solo poner un separador visual fuerte si hay más hijos después
+                        if (index < menores.size - 1) {
+                            HorizontalDivider(color = Color(0xFFF2F5FB), thickness = 6.dp)
+                        }
                     }
                 }
             }
@@ -249,5 +294,5 @@ fun FilaMenu(emoji: String, titulo: String, showIcon: Boolean = true, onClick: (
 
 @Composable
 fun DividerPersonalizado() {
-    Divider(color = Color(0xFFF2F5FB), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+    HorizontalDivider(color = Color(0xFFF2F5FB), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
 }

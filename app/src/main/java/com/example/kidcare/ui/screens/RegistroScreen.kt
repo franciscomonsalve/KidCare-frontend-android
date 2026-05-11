@@ -412,6 +412,9 @@ fun RegistroScreen(navController: NavController) {
                                 sessionManager.saveRol(rol)
                                 sessionManager.saveEmail(email)
                                 auth.idUsuario?.let { sessionManager.saveIdUsuario(it) }
+                                // Guardar nombre: del backend si viene, sino del formulario
+                                val nombreGuardar = auth.nombreCompleto ?: nombre.trim()
+                                sessionManager.saveNombreCompleto(nombreGuardar)
                                 RetrofitClient.jwtToken = token
                                 navController.navigate(Rutas.HOME) {
                                     popUpTo(Rutas.REGISTRO) { inclusive = true }

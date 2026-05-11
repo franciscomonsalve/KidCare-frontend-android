@@ -271,7 +271,7 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
                                 errorMsg = ""
                                 val result = runCatching {
                                     RetrofitClient.chatbotApi.registrarInteraccion(
-                                        InteraccionRequest(idMenor = idMenor, observaciones = textoRefinado, fallback = false)
+                                        InteraccionRequest(idMenor = idMenor, observaciones = textoRefinado, origen = "CHATBOT", fallback = false)
                                     )
                                 }
                                 result.onSuccess { resp ->

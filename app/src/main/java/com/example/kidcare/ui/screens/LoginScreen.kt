@@ -176,6 +176,7 @@ fun LoginScreen(navController: NavController) {
                                         sessionManager.saveRol(rol)
                                         sessionManager.saveEmail(email)
                                         auth.idUsuario?.let { sessionManager.saveIdUsuario(it) }
+                                        auth.nombreCompleto?.let { sessionManager.saveNombreCompleto(it) }
                                         RetrofitClient.jwtToken = token
                                         navController.navigate(
                                             if (rol == "TUTOR" || rol == "ADMIN") Rutas.HOME

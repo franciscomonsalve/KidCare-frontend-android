@@ -157,8 +157,10 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                 RetrofitClient.accesoApi.generarTokenMedico(
                                     GenerarTokenRequest(
                                         idMenor = idMenor,
-                                        latitud = 0.0,
-                                        longitud = 0.0
+                                        nombreMedico = null,
+                                        rutMedico = null,
+                                        latitudPadre = "0.0",
+                                        longitudPadre = "0.0"
                                     )
                                 )
                             }

@@ -17,7 +17,8 @@ data class AuthResponse(
     val token: String? = null,
     val email: String? = null,
     val rol: String? = null,
-    val idUsuario: Int? = null
+    val idUsuario: Int? = null,
+    val nombreCompleto: String? = null
 )
 
 data class RecuperarRequest(val email: String)
@@ -45,15 +46,18 @@ data class MenorResponse(
 data class InvitacionRequest(
     val emailDelegado: String,
     val idMenor: Int,
-    val duracion: String
+    val duracion: String? = null
 )
 
 data class DelegadoAccesoResponse(
     val idAcceso: Int = 0,
+    val idDelegado: Int = 0,
+    val idUsuarioDelegado: Int = 0,
     val nombreDelegado: String? = null,
     val emailDelegado: String? = null,
     val estado: String? = null,
-    val duracion: String? = null
+    val duracion: String? = null,
+    val fechaExpiracion: String? = null
 )
 
 data class EditarAccesoRequest(val duracion: String)
@@ -67,6 +71,7 @@ data class PreguntasResponse(val preguntas: List<String>? = null)
 data class InteraccionRequest(
     val idMenor: Int,
     val observaciones: String,
+    val origen: String = "CHATBOT",
     val fallback: Boolean = false,
     val idHistorial: Int? = null
 )
@@ -76,7 +81,10 @@ data class InteraccionResponse(
     val idMenor: Int = 0,
     val observaciones: String? = null,
     val fecha: String? = null,
-    val tipo: String? = null
+    val tipo: String? = null,
+    val fallback: Boolean = false,
+    val editado: Boolean = false,
+    val origen: String? = null
 )
 
 data class EditarInteraccionRequest(val observaciones: String)
@@ -89,19 +97,27 @@ data class HistorialResponse(
     val idHistorial: Int = 0,
     val idMenor: Int = 0,
     val resumen: String? = null,
+    val diagnostico: String? = null,
     val fecha: String? = null,
     val generadoPorIA: Boolean = false
 )
 
 // ─── TOKEN MÉDICO / ACCESO ────────────────────────────────────────────────────
 
-data class GenerarTokenRequest(val idMenor: Int, val latitud: Double, val longitud: Double)
+data class GenerarTokenRequest(
+    val idMenor: Int,
+    val nombreMedico: String? = null,
+    val rutMedico: String? = null,
+    val latitudPadre: String? = null,
+    val longitudPadre: String? = null
+)
 
 data class TokenMedicoResponse(
     val token: String? = null,
-    val idMenor: Int = 0,
-    val expiracion: String? = null,
-    val estado: String? = null
+    val urlAcceso: String? = null,
+    val estadoToken: String? = null,
+    val fechaExpiracion: String? = null,
+    val idMenor: Int = 0
 )
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────

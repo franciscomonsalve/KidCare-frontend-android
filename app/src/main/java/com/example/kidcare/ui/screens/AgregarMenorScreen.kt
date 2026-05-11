@@ -80,6 +80,8 @@ fun AgregarMenorScreen(navController: NavController) {
                             }
                             result.onSuccess { resp ->
                                 if (resp.isSuccessful) {
+                                    // Invalidar caché para refrescar la lista
+                                    com.example.kidcare.data.SessionManager(context).clearMenores()
                                     navController.navigate(Rutas.HOME) {
                                         popUpTo(Rutas.HOME) { inclusive = false }
                                     }

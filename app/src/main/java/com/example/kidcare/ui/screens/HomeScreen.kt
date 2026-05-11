@@ -32,6 +32,7 @@ fun HomeScreen(navController: NavController) {
     val context     = LocalContext.current
     val session     = remember { SessionManager(context) }
 
+    val nombre = session.getNombreCompleto() ?: session.getEmail()?.substringBefore("@") ?: "Usuario"
     val email = session.getEmail() ?: "Usuario"
     val rol   = session.getRol() ?: ""
 
@@ -40,13 +41,26 @@ fun HomeScreen(navController: NavController) {
     var cargando by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        // Primero intentar caché
+        val cached = session.getMenores()
+        if (cached.isNotEmpty()) {
+            menores.clear()
+            menores.addAll(cached)
+            val savedId = session.getMenorSeleccionadoId()
+            menorSeleccionadoId = if (savedId > 0 && cached.any { it.idMenor == savedId }) savedId
+                                  else cached.first().idMenor
+        }
+
+        // Siempre refrescar desde API
         cargando = true
         val result = runCatching { RetrofitClient.api.listarMenores() }
         result.onSuccess { resp ->
             if (resp.isSuccessful) {
+                val lista = resp.body() ?: emptyList()
                 menores.clear()
-                menores.addAll(resp.body() ?: emptyList())
-                if (menores.isNotEmpty() && menorSeleccionadoId == null) {
+                menores.addAll(lista)
+                session.saveMenores(lista)
+                if (menores.isNotEmpty() && (menorSeleccionadoId == null || menores.none { it.idMenor == menorSeleccionadoId })) {
                     menorSeleccionadoId = menores.first().idMenor
                 }
             }
@@ -72,7 +86,7 @@ fun HomeScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text("Bienvenido,", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f))
-                            Text("${email.substringBefore("@")} 👋", fontSize = 22.sp,
+                            Text("$nombre 👋", fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold, color = Color.White)
                         }
                         Box(
@@ -98,7 +112,10 @@ fun HomeScreen(navController: NavController) {
                                             if (seleccionado) Color.White.copy(alpha = 0.92f)
                                             else Color.White.copy(alpha = 0.14f),
                                             shape = RoundedCornerShape(14.dp))
-                                        .clickable { menorSeleccionadoId = menor.idMenor }
+                                        .clickable {
+                                            menorSeleccionadoId = menor.idMenor
+                                            session.saveMenorSeleccionadoId(menor.idMenor)
+                                        }
                                         .padding(horizontal = 14.dp, vertical = 10.dp)
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
