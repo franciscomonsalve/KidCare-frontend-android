@@ -122,16 +122,23 @@ fun InteraccionManualScreen(navController: NavController, menorId: String = "") 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Texto libre
+            val maxChars = 500
             Text("DESCRIPCIÓN ADICIONAL", fontSize = 11.sp, fontWeight = FontWeight.Bold,
                 color = Color(0xFF6B7280), letterSpacing = 0.6.sp, modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = textoLibre,
-                onValueChange = { textoLibre = it; errorMsg = "" },
+                onValueChange = { if (it.length <= maxChars) { textoLibre = it; errorMsg = "" } },
                 placeholder = { Text("Describe los síntomas observados...", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp), minLines = 4,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+            )
+            Text(
+                text = "${textoLibre.length}/$maxChars",
+                fontSize = 11.sp,
+                color = if (textoLibre.length >= maxChars) Color(0xFFDC2626) else Color(0xFF9CA3AF),
+                modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End).padding(top = 2.dp)
             )
 
             if (errorMsg.isNotEmpty()) {
@@ -151,6 +158,10 @@ fun InteraccionManualScreen(navController: NavController, menorId: String = "") 
                         }
                     }
                     if (observaciones.isBlank()) { errorMsg = "Selecciona al menos un síntoma o escribe una descripción."; return@Button }
+                    if (sintomasSelect.isEmpty() && textoLibre.trim().length < 10) {
+                        errorMsg = "Si no marcas síntomas, la descripción debe tener al menos 10 caracteres."
+                        return@Button
+                    }
 
                     scope.launch {
                         cargando = true
@@ -170,7 +181,7 @@ fun InteraccionManualScreen(navController: NavController, menorId: String = "") 
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                enabled = (sintomasSelect.isNotEmpty() || textoLibre.isNotBlank()) && !cargando
+                enabled = (sintomasSelect.isNotEmpty() || textoLibre.trim().length >= 10) && !cargando
             ) {
                 if (cargando) CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                 else Text("💾 Guardar observación", fontSize = 15.sp, fontWeight = FontWeight.Bold)

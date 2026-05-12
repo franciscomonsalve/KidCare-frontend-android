@@ -1,6 +1,7 @@
 package com.example.kidcare.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ fun HistorialListaScreen(navController: NavController, menorId: String = "") {
     var cargando by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf("") }
     val historiales = remember { mutableStateListOf<HistorialResponse>() }
+    var expandidoId by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(menorId) {
         if (idMenor <= 0) return@LaunchedEffect
@@ -70,8 +72,16 @@ fun HistorialListaScreen(navController: NavController, menorId: String = "") {
                         ) { Text("← Volver", fontSize = 14.sp) }
                         Text("Historial médico", fontSize = 22.sp, fontWeight = FontWeight.Bold,
                             color = Color.White, modifier = Modifier.padding(start = 8.dp))
-                        Text("${historiales.size} resúmenes generados", fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(start = 8.dp, top = 4.dp))
+                        Text(
+                            text = when {
+                                cargando -> "Cargando..."
+                                historiales.size == 1 -> "1 resumen generado"
+                                else -> "${historiales.size} resúmenes generados"
+                            },
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                        )
                     }
                 }
             }
@@ -103,17 +113,28 @@ fun HistorialListaScreen(navController: NavController, menorId: String = "") {
                 }
 
                 items(historiales) { h ->
+                    val estaExpandido = expandidoId == h.idHistorial
+                    val resumenTexto  = h.resumen.orEmpty()
+                    val fechaFormato  = h.fecha?.let { f ->
+                        val p = f.substringBefore("T").split("-")
+                        if (p.size == 3) "${p[2]}/${p[1]}/${p[0]}" else f
+                    }.orEmpty()
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 5.dp)
                             .background(Color.White, shape = RoundedCornerShape(14.dp))
+                            .clickable {
+                                expandidoId = if (estaExpandido) null else h.idHistorial
+                            }
                             .padding(16.dp)
                     ) {
                         Column {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                            Row(modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically) {
-                                Text(h.fecha.orEmpty(), fontSize = 12.sp, color = Color(0xFF6B7280))
+                                Text(fechaFormato, fontSize = 12.sp, color = Color(0xFF6B7280))
                                 Box(
                                     modifier = Modifier
                                         .background(
@@ -127,9 +148,25 @@ fun HistorialListaScreen(navController: NavController, menorId: String = "") {
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            val resumenTexto = h.resumen.orEmpty()
-                            Text(resumenTexto.take(200) + if (resumenTexto.length > 200) "..." else "",
-                                fontSize = 13.sp, color = Color(0xFF0F172A), lineHeight = 20.sp)
+                            if (estaExpandido) {
+                                Text(resumenTexto, fontSize = 13.sp, color = Color(0xFF0F172A), lineHeight = 20.sp)
+                                if (h.diagnostico?.isNotBlank() == true) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Diagnóstico: ${h.diagnostico}", fontSize = 12.sp,
+                                        color = Color(0xFF6B7280), lineHeight = 18.sp)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Toca para cerrar ▲", fontSize = 11.sp, color = Color(0xFF9CA3AF))
+                            } else {
+                                Text(
+                                    resumenTexto.take(200) + if (resumenTexto.length > 200) "..." else "",
+                                    fontSize = 13.sp, color = Color(0xFF0F172A), lineHeight = 20.sp
+                                )
+                                if (resumenTexto.length > 200) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Toca para ver más ▼", fontSize = 11.sp, color = azulKidCare)
+                                }
+                            }
                         }
                     }
                 }
