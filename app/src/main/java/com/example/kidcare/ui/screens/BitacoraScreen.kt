@@ -12,13 +12,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.SessionManager
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.EditarInteraccionRequest
 import com.example.kidcare.data.model.InteraccionResponse
+import com.example.kidcare.navigation.Rutas
 import kotlinx.coroutines.launch
 
 @Composable
@@ -27,9 +30,16 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
     val scope       = rememberCoroutineScope()
+    val context     = LocalContext.current
+    val session     = remember { SessionManager(context) }
 
-    var cargando     by remember { mutableStateOf(false) }
-    var errorMsg     by remember { mutableStateOf("") }
+    val idMenorInt  = menorId.toIntOrNull()
+    val menorInfo   = remember(menorId) { session.getMenores().find { it.idMenor == idMenorInt } }
+    val nombreMenor = menorInfo?.nombre.orEmpty().ifEmpty { "Menor" }
+    val emojiMenor  = menorInfo?.emoji ?: "🧒"
+
+    var cargando    by remember { mutableStateOf(false) }
+    var errorMsg    by remember { mutableStateOf("") }
 
     // Diálogo editar
     var mostrarEditar      by remember { mutableStateOf(false) }
@@ -134,10 +144,22 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                     TextButton(onClick = { navController.popBackStack() },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
                     ) { Text("← Volver", fontSize = 14.sp) }
-                    Text("Bitácora", fontSize = 22.sp, fontWeight = FontWeight.Bold,
-                        color = Color.White, modifier = Modifier.padding(start = 8.dp))
-                    Text("${interacciones.size} observaciones registradas", fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(start = 8.dp, top = 4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 8.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .background(Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Text(emojiMenor, fontSize = 20.sp) }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text("Bitácora de $nombreMenor", fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("${interacciones.size} observaciones registradas", fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(top = 2.dp))
+                        }
+                    }
                 }
             }
         }
@@ -157,6 +179,30 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                             Text(label, fontSize = 11.sp, color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                         }
                     }
+                }
+            }
+        }
+
+        // Botones nueva observación
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = { if (idMenorInt != null) navController.navigate(Rutas.chatbot(idMenorInt)) },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+                ) {
+                    Text("💬 Con asistente IA", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+                OutlinedButton(
+                    onClick = { if (idMenorInt != null) navController.navigate(Rutas.interaccionManual(idMenorInt)) },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("✏️ Manual", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

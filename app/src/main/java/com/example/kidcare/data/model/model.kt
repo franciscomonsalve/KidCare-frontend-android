@@ -120,7 +120,8 @@ data class GenerarTokenRequest(
     val nombreMedico: String? = null,
     val rutMedico: String? = null,
     val latitudPadre: String? = null,
-    val longitudPadre: String? = null
+    val longitudPadre: String? = null,
+    val observacionIds: List<String>? = null
 )
 
 data class TokenMedicoResponse(

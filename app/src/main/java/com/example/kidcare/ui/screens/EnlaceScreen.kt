@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,8 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,7 +34,7 @@ import com.example.kidcare.data.SessionManager
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.GenerarTokenRequest
 import com.example.kidcare.data.model.TokenMedicoResponse
-import com.google.android.gms.location.CancellationTokenSource
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -37,6 +42,30 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+
+private val soloLetrasReg = Regex("[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ'\\- ]")
+
+private fun calcularDV(cuerpo: String): String {
+    if (cuerpo.isEmpty() || !cuerpo.all { it.isDigit() }) return ""
+    var suma = 0; var factor = 2
+    for (i in cuerpo.length - 1 downTo 0) {
+        suma += cuerpo[i].digitToInt() * factor
+        factor = if (factor == 7) 2 else factor + 1
+    }
+    return when (val dv = 11 - (suma % 11)) { 11 -> "0"; 10 -> "K"; else -> dv.toString() }
+}
+
+private fun formatearRut(raw: String): String {
+    if (raw.length < 2) return raw
+    val body = raw.dropLast(1); val dv = raw.last()
+    val split = (body.length - 6).coerceAtLeast(0)
+    val fb = when {
+        body.length <= 3 -> body
+        body.length <= 6 -> "${body.dropLast(3)}.${body.takeLast(3)}"
+        else             -> "${body.take(split)}.${body.substring(split, split + 3)}.${body.takeLast(3)}"
+    }
+    return "$fb-$dv"
+}
 
 @SuppressLint("MissingPermission")
 private suspend fun obtenerCoordenadas(client: FusedLocationProviderClient): Pair<String, String>? =
@@ -75,10 +104,39 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
     var apellidosMedicoInput by remember { mutableStateOf("") }
     var rutMedicoInput       by remember { mutableStateOf("") }
 
+    // Selección de observaciones
+    val observacionesMenor = remember { mutableStateListOf<com.example.kidcare.data.model.InteraccionResponse>() }
+    var seleccionadasIds   by remember { mutableStateOf(setOf<String>()) }
+    var cargandoObs        by remember { mutableStateOf(false) }
+    var mostrarSeleccion   by remember { mutableStateOf(false) }
+
     // Disclaimer
     var mostrarDisclaimer    by remember { mutableStateOf(false) }
 
+    // Derivados del RUT
+    val rutRaw       = rutMedicoInput.replace(".", "").replace("-", "")
+    val rutCuerpo    = if (rutRaw.length >= 2) rutRaw.dropLast(1) else rutRaw
+    val dvCalculado  = if (rutCuerpo.length in 6..8) calcularDV(rutCuerpo) else ""
+    val rutValido    = rutRaw.length in 8..9 && rutCuerpo.all { it.isDigit() } &&
+                       dvCalculado == rutRaw.last().uppercase().toString()
+    val rutError     = rutRaw.length >= 8 && !rutValido
+
     val enlaceGenerado = tokenGenerado != null
+
+    LaunchedEffect(idMenor) {
+        if (idMenor <= 0) return@LaunchedEffect
+        cargandoObs = true
+        runCatching { RetrofitClient.chatbotApi.listarInteracciones(idMenor) }
+            .onSuccess { resp ->
+                if (resp.isSuccessful) {
+                    val lista = resp.body() ?: emptyList()
+                    observacionesMenor.clear()
+                    observacionesMenor.addAll(lista)
+                    seleccionadasIds = seleccionadasIds + lista.mapNotNull { it.id }
+                }
+            }
+        cargandoObs = false
+    }
 
     LaunchedEffect(enlaceGenerado) {
         if (enlaceGenerado) {
@@ -107,11 +165,13 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
         val result = runCatching {
             RetrofitClient.accesoApi.generarTokenMedico(
                 GenerarTokenRequest(
-                    idMenor       = idMenor,
-                    nombreMedico  = "$nombreMedicoInput $apellidosMedicoInput".trim(),
-                    rutMedico     = rutMedicoInput.trim(),
-                    latitudPadre  = coords.first,
-                    longitudPadre = coords.second
+                    idMenor        = idMenor,
+                    nombreMedico   = "$nombreMedicoInput $apellidosMedicoInput".trim(),
+                    rutMedico      = rutMedicoInput,
+                    latitudPadre   = coords.first,
+                    longitudPadre  = coords.second,
+                    observacionIds = if (seleccionadasIds.size < observacionesMenor.size)
+                                         seleccionadasIds.toList() else null
                 )
             )
         }
@@ -156,9 +216,10 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
         mostrarDisclaimer = true
     }
 
-    val camposCompletos = nombreMedicoInput.isNotBlank() &&
-                         apellidosMedicoInput.isNotBlank() &&
-                         rutMedicoInput.isNotBlank()
+    val camposCompletos = nombreMedicoInput.trim().length >= 2 &&
+                         apellidosMedicoInput.trim().length >= 2 &&
+                         rutValido &&
+                         (observacionesMenor.isEmpty() || seleccionadasIds.isNotEmpty())
 
     // ─── Disclaimer dialog ────────────────────────────────────────────────────
     if (mostrarDisclaimer) {
@@ -320,30 +381,75 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         )
                         OutlinedTextField(
                             value         = nombreMedicoInput,
-                            onValueChange = { nombreMedicoInput = it },
+                            onValueChange = {
+                                val f = soloLetrasReg.replace(it, "")
+                                if (f.length <= 25) nombreMedicoInput = f
+                            },
                             label         = { Text("Nombre(s)", fontSize = 13.sp) },
                             placeholder   = { Text("Ej: Juan Carlos", fontSize = 13.sp) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true,
-                            shape         = RoundedCornerShape(10.dp)
+                            shape         = RoundedCornerShape(10.dp),
+                            isError       = nombreMedicoInput.isNotEmpty() && nombreMedicoInput.trim().length < 2,
+                            supportingText = {
+                                if (nombreMedicoInput.isNotEmpty() && nombreMedicoInput.trim().length < 2)
+                                    Text("Mínimo 2 caracteres", color = Color(0xFFDC2626), fontSize = 11.sp)
+                                else
+                                    Text("${nombreMedicoInput.length}/25", fontSize = 11.sp,
+                                        color = Color(0xFF9CA3AF), modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.End)
+                            }
                         )
                         OutlinedTextField(
                             value         = apellidosMedicoInput,
-                            onValueChange = { apellidosMedicoInput = it },
+                            onValueChange = {
+                                val f = soloLetrasReg.replace(it, "")
+                                if (f.length <= 35) apellidosMedicoInput = f
+                            },
                             label         = { Text("Apellidos", fontSize = 13.sp) },
                             placeholder   = { Text("Ej: Pérez González", fontSize = 13.sp) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true,
-                            shape         = RoundedCornerShape(10.dp)
+                            shape         = RoundedCornerShape(10.dp),
+                            isError       = apellidosMedicoInput.isNotEmpty() && apellidosMedicoInput.trim().length < 2,
+                            supportingText = {
+                                if (apellidosMedicoInput.isNotEmpty() && apellidosMedicoInput.trim().length < 2)
+                                    Text("Mínimo 2 caracteres", color = Color(0xFFDC2626), fontSize = 11.sp)
+                                else
+                                    Text("${apellidosMedicoInput.length}/35", fontSize = 11.sp,
+                                        color = Color(0xFF9CA3AF), modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.End)
+                            }
                         )
                         OutlinedTextField(
                             value         = rutMedicoInput,
-                            onValueChange = { rutMedicoInput = it },
-                            label         = { Text("RUT del médico", fontSize = 13.sp) },
-                            placeholder   = { Text("Ej: 12.345.678-9", fontSize = 13.sp) },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true,
-                            shape         = RoundedCornerShape(10.dp)
+                            onValueChange = { nuevo ->
+                                val raw = nuevo.replace(".", "").replace("-", "")
+                                    .uppercase().filter { it.isDigit() || it == 'K' }.take(9)
+                                rutMedicoInput = if (raw.length >= 2) formatearRut(raw) else raw
+                            },
+                            label          = { Text("RUT del médico", fontSize = 13.sp) },
+                            placeholder    = { Text("Ej: 12.345.678-9", fontSize = 13.sp) },
+                            modifier       = Modifier.fillMaxWidth(),
+                            singleLine     = true,
+                            shape          = RoundedCornerShape(10.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                            isError        = rutError,
+                            supportingText = {
+                                when {
+                                    rutError ->
+                                        Text("RUT inválido. Dígito verificador incorrecto.",
+                                            color = Color(0xFFDC2626), fontSize = 11.sp)
+                                    rutValido ->
+                                        Text("RUT válido ✓", color = Color(0xFF059669), fontSize = 11.sp)
+                                    dvCalculado.isNotEmpty() ->
+                                        Text("Dígito verificador calculado: $dvCalculado",
+                                            color = Color(0xFF2563EB), fontSize = 11.sp)
+                                    else ->
+                                        Text("Ingresa el RUT sin puntos ni guión",
+                                            color = Color(0xFF9CA3AF), fontSize = 11.sp)
+                                }
+                            }
                         )
                         Row(
                             modifier             = Modifier
@@ -359,6 +465,110 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                 "Solo se valida proximidad GPS.",
                                 fontSize = 11.sp, color = Color(0xFF92400E), lineHeight = 16.sp
                             )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ─── Selección de observaciones ──────────────────────────────
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(14.dp))
+                    .padding(16.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+
+                        // Cabecera colapsable
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable { mostrarSeleccion = !mostrarSeleccion },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("📋", fontSize = 16.sp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Observaciones a compartir",
+                                    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                                Text(
+                                    when {
+                                        cargandoObs -> "Cargando..."
+                                        observacionesMenor.isEmpty() -> "Sin observaciones registradas"
+                                        seleccionadasIds.size == observacionesMenor.size ->
+                                            "Todas (${observacionesMenor.size})"
+                                        else -> "${seleccionadasIds.size} de ${observacionesMenor.size} seleccionadas"
+                                    },
+                                    fontSize = 12.sp, color = Color(0xFF6B7280)
+                                )
+                            }
+                            Text(if (mostrarSeleccion) "▲" else "▼",
+                                fontSize = 12.sp, color = Color(0xFF6B7280))
+                        }
+
+                        if (mostrarSeleccion) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            HorizontalDivider(color = Color(0xFFE5E7EB))
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Botones Todas / Ninguna
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(
+                                    onClick = { seleccionadasIds = seleccionadasIds + observacionesMenor.mapNotNull { it.id } },
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) { Text("Seleccionar todas", fontSize = 12.sp) }
+                                TextButton(
+                                    onClick = { seleccionadasIds = emptySet() },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFDC2626)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) { Text("Ninguna", fontSize = 12.sp) }
+                            }
+
+                            if (cargandoObs) {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp),
+                                        color = azulKidCare, strokeWidth = 2.dp)
+                                }
+                            } else if (observacionesMenor.isEmpty()) {
+                                Text("No hay observaciones registradas aún.",
+                                    fontSize = 13.sp, color = Color(0xFF9CA3AF),
+                                    modifier = Modifier.padding(vertical = 8.dp))
+                            } else {
+                                observacionesMenor.forEach { obs ->
+                                    val id = obs.id ?: return@forEach
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .clickable {
+                                                seleccionadasIds = if (id in seleccionadasIds)
+                                                    seleccionadasIds - id else seleccionadasIds + id
+                                            }
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = id in seleccionadasIds,
+                                            onCheckedChange = { checked ->
+                                                seleccionadasIds = if (checked)
+                                                    seleccionadasIds + id else seleccionadasIds - id
+                                            }
+                                        )
+                                        Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+                                            Text(obs.fecha.orEmpty(), fontSize = 11.sp, color = Color(0xFF6B7280))
+                                            Text(
+                                                obs.observaciones.orEmpty().take(80) +
+                                                    if ((obs.observaciones?.length ?: 0) > 80) "…" else "",
+                                                fontSize = 12.sp, color = Color(0xFF374151), lineHeight = 17.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (seleccionadasIds.isEmpty() && observacionesMenor.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Selecciona al menos una observación para continuar.",
+                                    fontSize = 12.sp, color = Color(0xFFDC2626))
+                            }
                         }
                     }
                 }
