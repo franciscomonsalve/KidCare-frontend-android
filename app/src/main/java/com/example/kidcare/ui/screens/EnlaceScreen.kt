@@ -1,5 +1,10 @@
 package com.example.kidcare.ui.screens
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -10,36 +15,61 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.GenerarTokenRequest
 import com.example.kidcare.data.model.TokenMedicoResponse
+import com.google.android.gms.location.CancellationTokenSource
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+
+// Obtiene las coordenadas actuales del dispositivo usando alta precisión GPS.
+// Requiere que el permiso ACCESS_FINE_LOCATION o ACCESS_COARSE_LOCATION ya esté concedido.
+@SuppressLint("MissingPermission")
+private suspend fun obtenerCoordenadas(client: FusedLocationProviderClient): Pair<String, String>? =
+    suspendCancellableCoroutine { cont ->
+        val cts = CancellationTokenSource()
+        client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+            .addOnSuccessListener { loc ->
+                cont.resume(loc?.let { "${it.latitude}" to "${it.longitude}" })
+            }
+            .addOnFailureListener { cont.resume(null) }
+        cont.invokeOnCancellation { cts.cancel() }
+    }
 
 @Composable
 fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
     val azulKidCare = Color(0xFF2563EB)
     val azulOscuro  = Color(0xFF1E3A8A)
+    val context     = LocalContext.current
     val scope       = rememberCoroutineScope()
 
-    val idMenor = menorId.toIntOrNull() ?: 0
+    val idMenor        = menorId.toIntOrNull() ?: 0
+    val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     var cargando          by remember { mutableStateOf(false) }
+    var obtenendoGps      by remember { mutableStateOf(false) }
     var errorMsg          by remember { mutableStateOf("") }
     var tokenGenerado     by remember { mutableStateOf<TokenMedicoResponse?>(null) }
-    var segundos          by remember { mutableStateOf(20 * 60) } // 20 minutos
+    var segundos          by remember { mutableStateOf(20 * 60) }
     var canalSeleccionado by remember { mutableStateOf("QR") }
 
     val enlaceGenerado = tokenGenerado != null
 
-    // Countdown timer
+    // Countdown timer — arranca cuando se genera el token
     LaunchedEffect(enlaceGenerado) {
         if (enlaceGenerado) {
             while (segundos > 0) {
@@ -49,10 +79,69 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
         }
     }
 
-    val minutos = segundos / 60
-    val segs    = segundos % 60
+    val minutos      = segundos / 60
+    val segs         = segundos % 60
     val timerDisplay = "${String.format("%02d", minutos)}:${String.format("%02d", segs)}"
-    val expirado = segundos <= 0
+    val expirado     = segundos <= 0
+
+    // Bloque compartido: obtiene GPS y luego llama al backend
+    suspend fun ubicarYGenerar() {
+        obtenendoGps = true
+        errorMsg = ""
+        val coords = obtenerCoordenadas(locationClient)
+        obtenendoGps = false
+        if (coords == null) {
+            errorMsg = "No se pudo obtener la ubicación. Asegúrate de tener el GPS activo."
+            return
+        }
+        cargando = true
+        val result = runCatching {
+            RetrofitClient.accesoApi.generarTokenMedico(
+                GenerarTokenRequest(
+                    idMenor       = idMenor,
+                    nombreMedico  = null,
+                    rutMedico     = null,
+                    latitudPadre  = coords.first,
+                    longitudPadre = coords.second
+                )
+            )
+        }
+        result.onSuccess { resp ->
+            if (resp.isSuccessful) {
+                tokenGenerado = resp.body()
+                segundos = 20 * 60
+            } else {
+                errorMsg = "No se pudo generar el token. Intenta nuevamente."
+            }
+        }.onFailure { errorMsg = "Error de conexión." }
+        cargando = false
+    }
+
+    // Launcher de permisos en tiempo de ejecución
+    val permisosLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permisos ->
+        val concedido = permisos[Manifest.permission.ACCESS_FINE_LOCATION]   == true ||
+                        permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (concedido) {
+            scope.launch { ubicarYGenerar() }
+        } else {
+            errorMsg = "Se requiere permiso de ubicación para verificar la proximidad con el médico."
+        }
+    }
+
+    fun onGenerarClick() {
+        errorMsg = ""
+        val tieneFino   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)   == PackageManager.PERMISSION_GRANTED
+        val tieneGrueso = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (tieneFino || tieneGrueso) {
+            scope.launch { ubicarYGenerar() }
+        } else {
+            permisosLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF2F5FB))) {
 
@@ -67,24 +156,54 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 TextButton(onClick = { navController.popBackStack() },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
                 ) { Text("← Volver", fontSize = 14.sp) }
-                Text(if (enlaceGenerado) "Token generado" else "Compartir con médico",
+                Text(
+                    if (enlaceGenerado) "Token generado" else "Compartir con médico",
                     fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
-                    modifier = Modifier.padding(start = 8.dp))
-                Text(if (enlaceGenerado) "Válido por 20 minutos" else "Enlace temporal seguro",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                Text(
+                    if (enlaceGenerado) "Válido por 20 minutos" else "Enlace temporal seguro",
                     fontSize = 13.sp, color = Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp))
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
             }
         }
 
         if (!enlaceGenerado) {
-            // Vista antes de generar
+            // ─── VISTA PREVIA A GENERAR ───────────────────────────────────────
             Column(modifier = Modifier.padding(20.dp)) {
 
-                Box(modifier = Modifier.fillMaxWidth().background(Color.White, shape = RoundedCornerShape(14.dp)).padding(16.dp)) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(14.dp))
+                    .padding(16.dp)
+                ) {
                     Column {
                         Text("¿Cómo compartir?", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                        Text("El médico podrá ver la bitácora del menor por 20 minutos. El sistema verifica la proximidad geográfica.",
-                            fontSize = 13.sp, color = Color(0xFF6B7280), lineHeight = 20.sp, modifier = Modifier.padding(top = 4.dp))
+                        Text(
+                            "El médico podrá ver la bitácora del menor por 20 minutos. " +
+                            "El sistema verifica la proximidad geográfica.",
+                            fontSize = 13.sp, color = Color(0xFF6B7280), lineHeight = 20.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Aviso GPS
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+                        Text("📍", fontSize = 14.sp)
+                        Text(
+                            "Se usará tu ubicación GPS para que el médico pueda verificar la proximidad. " +
+                            "Asegúrate de tener el GPS activo.",
+                            fontSize = 12.sp, color = Color(0xFF1E3A8A), lineHeight = 17.sp
+                        )
                     }
                 }
 
@@ -95,12 +214,14 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
                 // Opción QR
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .background(Color.White, shape = RoundedCornerShape(14.dp))
                         .border(
                             width = if (canalSeleccionado == "QR") 2.dp else 1.dp,
                             color = if (canalSeleccionado == "QR") azulKidCare else Color(0xFFE5E7EB),
-                            shape = RoundedCornerShape(14.dp))
+                            shape = RoundedCornerShape(14.dp)
+                        )
                         .padding(16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -123,12 +244,14 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
                 // Opción Email
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .background(Color.White, shape = RoundedCornerShape(14.dp))
                         .border(
                             width = if (canalSeleccionado == "EMAIL") 2.dp else 1.dp,
                             color = if (canalSeleccionado == "EMAIL") azulKidCare else Color(0xFFE5E7EB),
-                            shape = RoundedCornerShape(14.dp))
+                            shape = RoundedCornerShape(14.dp)
+                        )
                         .padding(16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -149,59 +272,55 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = {
-                        scope.launch {
-                            cargando = true
-                            errorMsg = ""
-                            val result = runCatching {
-                                RetrofitClient.accesoApi.generarTokenMedico(
-                                    GenerarTokenRequest(
-                                        idMenor = idMenor,
-                                        nombreMedico = null,
-                                        rutMedico = null,
-                                        latitudPadre = "0.0",
-                                        longitudPadre = "0.0"
-                                    )
-                                )
-                            }
-                            result.onSuccess { resp ->
-                                if (resp.isSuccessful) {
-                                    tokenGenerado = resp.body()
-                                    segundos = 20 * 60
-                                } else {
-                                    errorMsg = "No se pudo generar el token. Intenta nuevamente."
-                                }
-                            }.onFailure { errorMsg = "Error de conexión." }
-                            cargando = false
-                        }
-                    },
+                    onClick = { onGenerarClick() },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = RoundedCornerShape(13.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                    enabled = !cargando && idMenor > 0
+                    enabled = !cargando && !obtenendoGps && idMenor > 0
                 ) {
-                    if (cargando) CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-                    else Text("Generar enlace temporal", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    when {
+                        obtenendoGps -> {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Obteniendo ubicación...", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                        cargando -> {
+                            CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                        }
+                        else -> {
+                            Text("Generar enlace temporal", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Text("Solo puede existir un enlace activo por hijo a la vez.", fontSize = 12.sp,
-                    color = Color(0xFF9CA3AF), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text(
+                    "Solo puede existir un enlace activo por hijo a la vez.",
+                    fontSize = 12.sp, color = Color(0xFF9CA3AF),
+                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+                )
             }
 
         } else {
-            // Vista después de generar
-            Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            // ─── VISTA POST-GENERACIÓN ────────────────────────────────────────
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-                Box(modifier = Modifier.fillMaxWidth().background(Color.White, shape = RoundedCornerShape(18.dp)).padding(24.dp),
-                    contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(18.dp))
+                    .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Muestra este token al médico", fontSize = 13.sp, color = Color(0xFF6B7280),
                             modifier = Modifier.padding(bottom = 16.dp))
 
-                        // Token como texto (QR real requeriría dependencia adicional)
                         Box(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
                                 .background(Color(0xFFF2F5FB), shape = RoundedCornerShape(12.dp))
                                 .border(1.dp, Color(0xFFE5E7EB), shape = RoundedCornerShape(12.dp))
                                 .padding(20.dp),
@@ -216,23 +335,35 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         Text(timerDisplay, fontSize = 36.sp, fontWeight = FontWeight.Bold,
                             color = if (expirado) Color(0xFFDC2626) else azulKidCare,
                             fontFamily = FontFamily.Monospace)
-                        Text(if (expirado) "Enlace expirado" else "tiempo restante",
-                            fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(top = 4.dp))
+                        Text(
+                            if (expirado) "Enlace expirado" else "tiempo restante",
+                            fontSize = 12.sp, color = Color(0xFF9CA3AF),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Box(modifier = Modifier.fillMaxWidth().background(Color.White, shape = RoundedCornerShape(14.dp)).padding(16.dp)) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(14.dp))
+                    .padding(16.dp)
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Estado", fontSize = 13.sp, color = Color(0xFF6B7280))
-                            Box(modifier = Modifier.background(
-                                if (expirado) Color(0xFFFEE2E2) else Color(0xFFFEF3C7),
-                                shape = RoundedCornerShape(20.dp)).padding(horizontal = 10.dp, vertical = 3.dp)) {
-                                Text(if (expirado) "EXPIRADO" else "ACTIVO", fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (expirado) Color(0xFFDC2626) else Color(0xFFD97706))
+                            Box(modifier = Modifier
+                                .background(
+                                    if (expirado) Color(0xFFFEE2E2) else Color(0xFFFEF3C7),
+                                    shape = RoundedCornerShape(20.dp))
+                                .padding(horizontal = 10.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    if (expirado) "EXPIRADO" else "ACTIVO",
+                                    fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                    color = if (expirado) Color(0xFFDC2626) else Color(0xFFD97706)
+                                )
                             }
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
