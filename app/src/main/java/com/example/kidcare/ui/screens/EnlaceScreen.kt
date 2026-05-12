@@ -8,7 +8,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import com.example.kidcare.data.SessionManager
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.GenerarTokenRequest
 import com.example.kidcare.data.model.TokenMedicoResponse
@@ -35,8 +38,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-// Obtiene las coordenadas actuales del dispositivo usando alta precisión GPS.
-// Requiere que el permiso ACCESS_FINE_LOCATION o ACCESS_COARSE_LOCATION ya esté concedido.
 @SuppressLint("MissingPermission")
 private suspend fun obtenerCoordenadas(client: FusedLocationProviderClient): Pair<String, String>? =
     suspendCancellableCoroutine { cont ->
@@ -56,20 +57,29 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
     val azulOscuro  = Color(0xFF1E3A8A)
     val context     = LocalContext.current
     val scope       = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     val idMenor        = menorId.toIntOrNull() ?: 0
     val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val nombreTutor    = remember { SessionManager(context).getNombreCompleto() ?: "el tutor" }
 
-    var cargando          by remember { mutableStateOf(false) }
-    var obtenendoGps      by remember { mutableStateOf(false) }
-    var errorMsg          by remember { mutableStateOf("") }
-    var tokenGenerado     by remember { mutableStateOf<TokenMedicoResponse?>(null) }
-    var segundos          by remember { mutableStateOf(20 * 60) }
-    var canalSeleccionado by remember { mutableStateOf("QR") }
+    var cargando             by remember { mutableStateOf(false) }
+    var obtenendoGps         by remember { mutableStateOf(false) }
+    var errorMsg             by remember { mutableStateOf("") }
+    var tokenGenerado        by remember { mutableStateOf<TokenMedicoResponse?>(null) }
+    var segundos             by remember { mutableStateOf(20 * 60) }
+    var canalSeleccionado    by remember { mutableStateOf("QR") }
+
+    // Datos del médico
+    var nombreMedicoInput    by remember { mutableStateOf("") }
+    var apellidosMedicoInput by remember { mutableStateOf("") }
+    var rutMedicoInput       by remember { mutableStateOf("") }
+
+    // Disclaimer
+    var mostrarDisclaimer    by remember { mutableStateOf(false) }
 
     val enlaceGenerado = tokenGenerado != null
 
-    // Countdown timer — arranca cuando se genera el token
     LaunchedEffect(enlaceGenerado) {
         if (enlaceGenerado) {
             while (segundos > 0) {
@@ -84,7 +94,6 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
     val timerDisplay = "${String.format("%02d", minutos)}:${String.format("%02d", segs)}"
     val expirado     = segundos <= 0
 
-    // Bloque compartido: obtiene GPS y luego llama al backend
     suspend fun ubicarYGenerar() {
         obtenendoGps = true
         errorMsg = ""
@@ -99,8 +108,8 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
             RetrofitClient.accesoApi.generarTokenMedico(
                 GenerarTokenRequest(
                     idMenor       = idMenor,
-                    nombreMedico  = null,
-                    rutMedico     = null,
+                    nombreMedico  = "$nombreMedicoInput $apellidosMedicoInput".trim(),
+                    rutMedico     = rutMedicoInput.trim(),
                     latitudPadre  = coords.first,
                     longitudPadre = coords.second
                 )
@@ -117,7 +126,6 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
         cargando = false
     }
 
-    // Launcher de permisos en tiempo de ejecución
     val permisosLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permisos ->
@@ -130,7 +138,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
         }
     }
 
-    fun onGenerarClick() {
+    fun ejecutarGeneracion() {
         errorMsg = ""
         val tieneFino   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)   == PackageManager.PERMISSION_GRANTED
         val tieneGrueso = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -141,6 +149,103 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
             )
         }
+    }
+
+    fun onGenerarClick() {
+        errorMsg = ""
+        mostrarDisclaimer = true
+    }
+
+    val camposCompletos = nombreMedicoInput.isNotBlank() &&
+                         apellidosMedicoInput.isNotBlank() &&
+                         rutMedicoInput.isNotBlank()
+
+    // ─── Disclaimer dialog ────────────────────────────────────────────────────
+    if (mostrarDisclaimer) {
+        AlertDialog(
+            onDismissRequest = { mostrarDisclaimer = false },
+            containerColor   = Color.White,
+            shape            = RoundedCornerShape(18.dp),
+            title = {
+                Column {
+                    Text("⚠️", fontSize = 28.sp, modifier = Modifier.padding(bottom = 6.dp))
+                    Text(
+                        "Aviso de responsabilidad",
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A)
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Estimado/a $nombreTutor,",
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        "Estás a punto de compartir información médica sensible de un menor a tu cargo con:",
+                        fontSize = 13.sp, color = Color(0xFF374151), lineHeight = 19.sp
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF1F5F9), shape = RoundedCornerShape(10.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Médico: $nombreMedicoInput $apellidosMedicoInput",
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
+                            Text("RUT: $rutMedicoInput",
+                                fontSize = 12.sp, color = Color(0xFF6B7280))
+                        }
+                    }
+                    Text(
+                        "Al continuar confirmas que:",
+                        fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF374151)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        listOf(
+                            "Eres el responsable legal de este menor.",
+                            "Los datos del médico ingresados son correctos.",
+                            "Aceptas plena responsabilidad por el acceso que estás autorizando.",
+                            "KidCare no verifica la identidad del médico en tiempo real."
+                        ).forEach { punto ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("•", fontSize = 13.sp, color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)
+                                Text(punto, fontSize = 12.sp, color = Color(0xFF374151), lineHeight = 18.sp)
+                            }
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFFFF7ED), shape = RoundedCornerShape(8.dp))
+                            .padding(10.dp)
+                    ) {
+                        Text(
+                            "El enlace expirará en 20 minutos y solo puede usarse una vez.",
+                            fontSize = 11.sp, color = Color(0xFF92400E), lineHeight = 16.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { mostrarDisclaimer = false; ejecutarGeneracion() },
+                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
+                    shape  = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Confirmar y generar", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { mostrarDisclaimer = false },
+                    shape   = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Cancelar", fontSize = 13.sp)
+                }
+            }
+        )
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF2F5FB))) {
@@ -171,7 +276,11 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
         if (!enlaceGenerado) {
             // ─── VISTA PREVIA A GENERAR ───────────────────────────────────────
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(scrollState)
+                    .padding(20.dp)
+            ) {
 
                 Box(modifier = Modifier
                     .fillMaxWidth()
@@ -186,6 +295,71 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                             fontSize = 13.sp, color = Color(0xFF6B7280), lineHeight = 20.sp,
                             modifier = Modifier.padding(top = 4.dp)
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ─── Datos del médico ─────────────────────────────────────────
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(14.dp))
+                    .padding(16.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("🩺", fontSize = 16.sp)
+                            Text("Datos del médico",
+                                fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                        }
+                        Text(
+                            "Ingresa los datos del profesional con quien compartes la bitácora. " +
+                            "Esta información quedará registrada.",
+                            fontSize = 12.sp, color = Color(0xFF6B7280), lineHeight = 17.sp
+                        )
+                        OutlinedTextField(
+                            value         = nombreMedicoInput,
+                            onValueChange = { nombreMedicoInput = it },
+                            label         = { Text("Nombre(s)", fontSize = 13.sp) },
+                            placeholder   = { Text("Ej: Juan Carlos", fontSize = 13.sp) },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true,
+                            shape         = RoundedCornerShape(10.dp)
+                        )
+                        OutlinedTextField(
+                            value         = apellidosMedicoInput,
+                            onValueChange = { apellidosMedicoInput = it },
+                            label         = { Text("Apellidos", fontSize = 13.sp) },
+                            placeholder   = { Text("Ej: Pérez González", fontSize = 13.sp) },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true,
+                            shape         = RoundedCornerShape(10.dp)
+                        )
+                        OutlinedTextField(
+                            value         = rutMedicoInput,
+                            onValueChange = { rutMedicoInput = it },
+                            label         = { Text("RUT del médico", fontSize = 13.sp) },
+                            placeholder   = { Text("Ej: 12.345.678-9", fontSize = 13.sp) },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true,
+                            shape         = RoundedCornerShape(10.dp)
+                        )
+                        Row(
+                            modifier             = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFF7ED), shape = RoundedCornerShape(8.dp))
+                                .padding(9.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment     = Alignment.Top
+                        ) {
+                            Text("⚠️", fontSize = 12.sp)
+                            Text(
+                                "La identidad del médico no es verificada automáticamente. " +
+                                "Solo se valida proximidad GPS.",
+                                fontSize = 11.sp, color = Color(0xFF92400E), lineHeight = 16.sp
+                            )
+                        }
                     }
                 }
 
@@ -272,11 +446,11 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { onGenerarClick() },
+                    onClick  = { onGenerarClick() },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(13.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                    enabled = !cargando && !obtenendoGps && idMenor > 0
+                    shape    = RoundedCornerShape(13.dp),
+                    colors   = ButtonDefaults.buttonColors(containerColor = azulKidCare),
+                    enabled  = !cargando && !obtenendoGps && idMenor > 0 && camposCompletos
                 ) {
                     when {
                         obtenendoGps -> {
@@ -299,6 +473,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                     fontSize = 12.sp, color = Color(0xFF9CA3AF),
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
         } else {
@@ -370,6 +545,15 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                             Text("Canal", fontSize = 13.sp, color = Color(0xFF6B7280))
                             Text("QR", fontSize = 13.sp, color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
                         }
+                        if (nombreMedicoInput.isNotBlank()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Médico", fontSize = 13.sp, color = Color(0xFF6B7280))
+                                Text(
+                                    "$nombreMedicoInput $apellidosMedicoInput",
+                                    fontSize = 13.sp, color = Color(0xFF0F172A), fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -385,9 +569,9 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(13.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5))
+                    shape    = RoundedCornerShape(13.dp),
+                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
+                    border   = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5))
                 ) { Text("Invalidar enlace", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
             }
         }
