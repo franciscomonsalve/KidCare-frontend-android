@@ -17,6 +17,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.model.CambiarPasswordRequest
+import kotlinx.coroutines.launch
 
 @Composable
 fun CambiarContrasenaScreen(navController: NavController) {
@@ -33,9 +36,15 @@ fun CambiarContrasenaScreen(navController: NavController) {
     var verConfirmar by remember { mutableStateOf(false) }
 
     var cambioExitoso by remember { mutableStateOf(false) }
+    var cargando      by remember { mutableStateOf(false) }
+    var errorMsg      by remember { mutableStateOf("") }
+    val scope         = rememberCoroutineScope()
 
-    // Validaciones
-    val contrasenaValida = contrasenaNueva.length >= 8
+    // Validaciones — refleja la política del backend: ≥8 chars, 1 mayúscula, 1 símbolo
+    val tieneLongitud   = contrasenaNueva.length >= 8
+    val tieneMayuscula  = contrasenaNueva.any { it.isUpperCase() }
+    val tieneSimbolo    = contrasenaNueva.any { !it.isLetterOrDigit() }
+    val contrasenaValida    = tieneLongitud && tieneMayuscula && tieneSimbolo
     val contrasenasCoinciden = contrasenaNueva == confirmarContrasena
     val formularioValido = contrasenaActual.isNotBlank() &&
             contrasenaValida &&
@@ -185,18 +194,14 @@ fun CambiarContrasenaScreen(navController: NavController) {
                     )
                 )
 
-                // Indicador de seguridad
+                // Indicador de seguridad (refleja política real del backend)
                 if (contrasenaNueva.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf(
-                            contrasenaNueva.length >= 8,
-                            contrasenaNueva.any { it.isUpperCase() },
-                            contrasenaNueva.any { it.isDigit() }
-                        ).forEachIndexed { index, cumple ->
+                        listOf(tieneLongitud, tieneMayuscula, tieneSimbolo).forEach { cumple ->
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -210,10 +215,10 @@ fun CambiarContrasenaScreen(navController: NavController) {
                     }
                     Text(
                         text = when {
-                            contrasenaNueva.length < 8 -> "Mínimo 8 caracteres"
-                            !contrasenaNueva.any { it.isUpperCase() } -> "Agrega una mayúscula"
-                            !contrasenaNueva.any { it.isDigit() } -> "Agrega un número"
-                            else -> "✓ Contraseña segura"
+                            !tieneLongitud  -> "Mínimo 8 caracteres"
+                            !tieneMayuscula -> "Agrega una mayúscula"
+                            !tieneSimbolo   -> "Agrega un símbolo especial (!@#\$...)"
+                            else            -> "✓ Contraseña segura"
                         },
                         fontSize = 11.sp,
                         color = if (contrasenaValida) Color(0xFF059669) else Color(0xFF9CA3AF),
@@ -264,18 +269,55 @@ fun CambiarContrasenaScreen(navController: NavController) {
                     )
                 }
 
+                if (errorMsg.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMsg,
+                        fontSize = 12.sp,
+                        color = Color(0xFFDC2626),
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(28.dp))
 
                 Button(
-                    onClick = { cambioExitoso = true },
+                    onClick = {
+                        scope.launch {
+                            cargando = true
+                            errorMsg = ""
+                            val result = runCatching {
+                                RetrofitClient.api.cambiarPassword(
+                                    CambiarPasswordRequest(
+                                        passwordActual = contrasenaActual,
+                                        passwordNueva  = contrasenaNueva
+                                    )
+                                )
+                            }
+                            result.onSuccess { resp ->
+                                if (resp.isSuccessful) {
+                                    cambioExitoso = true
+                                } else {
+                                    errorMsg = "Contraseña actual incorrecta. Inténtalo de nuevo."
+                                }
+                            }.onFailure {
+                                errorMsg = "Error de conexión. Inténtalo de nuevo."
+                            }
+                            cargando = false
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                    enabled = formularioValido
+                    enabled = formularioValido && !cargando
                 ) {
-                    Text("Actualizar contraseña", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    if (cargando) {
+                        CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("Actualizar contraseña", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

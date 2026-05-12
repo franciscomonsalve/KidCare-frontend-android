@@ -39,13 +39,14 @@ fun PerfilMenorScreen(navController: NavController, menorId: String) {
         cargando = false
     }
 
+    // Backend devuelve formato ISO: yyyy-MM-dd
     fun calcularEdad(fechaNacimiento: String): String {
         return try {
-            val partes = fechaNacimiento.split("/")
+            val partes = fechaNacimiento.split("-")
             if (partes.size < 3) return fechaNacimiento
             val cal = Calendar.getInstance()
             val hoy = Calendar.getInstance()
-            cal.set(partes[2].toInt(), partes[1].toInt() - 1, partes[0].toInt())
+            cal.set(partes[0].toInt(), partes[1].toInt() - 1, partes[2].toInt())
             var anios = hoy.get(Calendar.YEAR) - cal.get(Calendar.YEAR)
             if (hoy.get(Calendar.DAY_OF_YEAR) < cal.get(Calendar.DAY_OF_YEAR)) anios--
             val meses = (hoy.get(Calendar.YEAR) * 12 + hoy.get(Calendar.MONTH)) -
@@ -56,6 +57,13 @@ fun PerfilMenorScreen(navController: NavController, menorId: String) {
                 else       -> "Recién nacido"
             }
         } catch (e: Exception) { fechaNacimiento }
+    }
+
+    fun formatearFecha(fecha: String): String {
+        return try {
+            val partes = fecha.split("-")
+            if (partes.size < 3) fecha else "${partes[2]}/${partes[1]}/${partes[0]}"
+        } catch (e: Exception) { fecha }
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize().background(Color(0xFFF2F5FB))) {
@@ -119,7 +127,7 @@ fun PerfilMenorScreen(navController: NavController, menorId: String) {
                             color = Color(0xFF6B7280), letterSpacing = 0.6.sp)
 
                         FilaDato("Nombre", menor!!.nombre.orEmpty())
-                        FilaDato("Fecha de nacimiento", menor!!.fechaNacimiento.orEmpty())
+                        FilaDato("Fecha de nacimiento", formatearFecha(menor!!.fechaNacimiento.orEmpty()))
                         FilaDato("Edad", calcularEdad(menor!!.fechaNacimiento.orEmpty()))
                         FilaDato("Género", menor!!.sexo.orEmpty())
                         FilaDato("ID del menor", "#${menor!!.idMenor}")

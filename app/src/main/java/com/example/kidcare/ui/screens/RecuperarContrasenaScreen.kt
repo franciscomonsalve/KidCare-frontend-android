@@ -292,7 +292,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                     )
 
                     if (correoError) {
-                        Text("⚠ Ingresa un correo válido", fontSize = 12.sp, color = Color(0xFFDC2626),
+                        Text("⚠ Correo inválido. Ej: nombre@correo.com", fontSize = 12.sp, color = Color(0xFFDC2626),
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
                     }
                     if (errorMsg.isNotEmpty()) {

@@ -326,7 +326,7 @@ fun RegistroScreen(navController: NavController) {
                 singleLine = true
             )
             Text(
-                text = "Mínimo 8 caracteres · Sin espacios",
+                text = "Mín. 8 caracteres · 1 mayúscula · 1 símbolo (!@#\$...) · Sin espacios",
                 fontSize = 11.sp,
                 color = Color(0xFF9CA3AF),
                 modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
@@ -404,6 +404,14 @@ fun RegistroScreen(navController: NavController) {
                     }
                     if (contrasena.length < 8) {
                         errorMsg = "La contraseña debe tener al menos 8 caracteres"
+                        return@Button
+                    }
+                    if (contrasena.none { it.isUpperCase() }) {
+                        errorMsg = "La contraseña debe contener al menos una mayúscula"
+                        return@Button
+                    }
+                    if (contrasena.all { it.isLetterOrDigit() }) {
+                        errorMsg = "La contraseña debe contener al menos un símbolo (!@#\$...)"
                         return@Button
                     }
                     if (contrasena != confirmar) {

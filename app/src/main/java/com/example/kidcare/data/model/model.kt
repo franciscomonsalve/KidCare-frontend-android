@@ -23,6 +23,7 @@ data class AuthResponse(
 
 data class RecuperarRequest(val email: String)
 data class RestablecerRequest(val token: String, val nuevaPassword: String)
+data class CambiarPasswordRequest(val passwordActual: String, val passwordNueva: String)
 
 // ─── MENOR ────────────────────────────────────────────────────────────────────
 

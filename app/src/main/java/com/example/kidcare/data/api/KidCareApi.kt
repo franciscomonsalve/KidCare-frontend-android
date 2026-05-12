@@ -19,6 +19,9 @@ interface KidCareApi {
     @POST("api/auth/restablecer")
     suspend fun restablecerPassword(@Body body: RestablecerRequest): Response<MessageResponse>
 
+    @POST("api/auth/cambiar")
+    suspend fun cambiarPassword(@Body body: CambiarPasswordRequest): Response<MessageResponse>
+
     // ─── MENORES ──────────────────────────────────────────────────────────────
     @POST("api/menores")
     suspend fun crearMenor(@Body body: MenorRequest): Response<MenorResponse>

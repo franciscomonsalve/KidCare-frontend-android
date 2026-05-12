@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -150,15 +151,17 @@ fun PerfilScreen(navController: NavController) {
         item {
             SeccionTitulo("CUENTA")
             CardContenedor {
-                val opcionesCuenta = listOf(
-                    Triple("👤", "Editar perfil",       Rutas.CONFIGURACION),
-                    Triple("🔒", "Cambiar contraseña",  Rutas.CAMBIAR_CONTRASENA),
-                    Triple("🔔", "Notificaciones",      Rutas.CONFIGURACION),
-                )
-                opcionesCuenta.forEachIndexed { index, (emoji, titulo, ruta) ->
-                    FilaMenu(emoji, titulo, onClick = { navController.navigate(ruta) })
-                    if (index < opcionesCuenta.size - 1) DividerPersonalizado()
-                }
+                FilaMenu("👤", "Editar perfil", onClick = {
+                    Toast.makeText(context, "Próximamente disponible", Toast.LENGTH_SHORT).show()
+                })
+                DividerPersonalizado()
+                FilaMenu("🔒", "Cambiar contraseña", onClick = {
+                    navController.navigate(Rutas.CAMBIAR_CONTRASENA)
+                })
+                DividerPersonalizado()
+                FilaMenu("🔔", "Notificaciones", onClick = {
+                    Toast.makeText(context, "Próximamente disponible", Toast.LENGTH_SHORT).show()
+                })
             }
         }
 
