@@ -170,7 +170,12 @@ fun DelegadoScreen(navController: NavController, menorId: String = "") {
                             }
                             Text(delegado.emailDelegado.orEmpty(), fontSize = 12.sp, color = Color(0xFF6B7280),
                                 modifier = Modifier.padding(top = 2.dp))
-                            delegado.duracion?.let { Text("Acceso: $it", fontSize = 12.sp, color = Color(0xFF9CA3AF)) }
+                            delegado.duracion?.takeIf { it.isNotEmpty() }?.let {
+                                Text("Acceso: $it", fontSize = 12.sp, color = Color(0xFF9CA3AF))
+                            }
+                            delegado.fechaExpiracion?.takeIf { it.isNotEmpty() }?.let {
+                                Text("Vence: $it", fontSize = 12.sp, color = Color(0xFFD97706))
+                            }
                         }
 
                         TextButton(

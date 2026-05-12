@@ -121,6 +121,25 @@ fun InvitarDelegadoScreen(navController: NavController, menorId: String = "") {
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFEFF6FF), shape = RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("ℹ️", fontSize = 14.sp)
+                        Text(
+                            text = "El delegado recibirá un correo con el enlace de acceso. El acceso se otorga únicamente por invitación del tutor, no por registro propio.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF1E3A8A),
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
+
                 if (errorMsg.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(errorMsg, fontSize = 13.sp, color = Color(0xFFDC2626))

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,7 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -38,7 +42,7 @@ fun AgregarMenorScreen(navController: NavController) {
     val scope       = rememberCoroutineScope()
 
     var nombre            by remember { mutableStateOf("") }
-    var fechaNacimiento   by remember { mutableStateOf("") }
+    var fechaNacimiento   by remember { mutableStateOf(TextFieldValue("")) }
     var genero            by remember { mutableStateOf("") }
     var emojiSeleccionado by remember { mutableStateOf("👧") }
     var cargando          by remember { mutableStateOf(false) }
@@ -57,7 +61,7 @@ fun AgregarMenorScreen(navController: NavController) {
                     Text("¿Deseas registrar al siguiente menor?")
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("$emojiSeleccionado  $nombre", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Text("Nacimiento: $fechaNacimiento", fontSize = 14.sp, color = Color(0xFF6B7280))
+                    Text("Nacimiento: ${fechaNacimiento.text}", fontSize = 14.sp, color = Color(0xFF6B7280))
                     Text("Género: $genero", fontSize = 14.sp, color = Color(0xFF6B7280))
                 }
             },
@@ -72,7 +76,7 @@ fun AgregarMenorScreen(navController: NavController) {
                                 RetrofitClient.api.crearMenor(
                                     MenorRequest(
                                         nombre = nombre.trim(),
-                                        fechaNacimiento = convertirFechaParaApi(fechaNacimiento),
+                                        fechaNacimiento = convertirFechaParaApi(fechaNacimiento.text),
                                         sexo = genero,
                                         emoji = emojiSeleccionado
                                     )
@@ -167,12 +171,20 @@ fun AgregarMenorScreen(navController: NavController) {
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it; errorMsg = "" },
-                placeholder = { Text("Sofía", color = Color(0xFF9CA3AF)) },
+                placeholder = { Text("Ej: Sofía", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp), singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
             )
+            if (nombre.isNotEmpty() && nombre.trim().length < 2) {
+                Text(
+                    text = "El nombre debe tener al menos 2 caracteres",
+                    fontSize = 11.sp,
+                    color = Color(0xFFDC2626),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -182,10 +194,38 @@ fun AgregarMenorScreen(navController: NavController) {
                 modifier = Modifier.padding(bottom = 6.dp))
             OutlinedTextField(
                 value = fechaNacimiento,
-                onValueChange = { fechaNacimiento = it; errorMsg = "" },
-                placeholder = { Text("Ej: 15/03/2020", color = Color(0xFF9CA3AF)) },
+                onValueChange = { input ->
+                    val digits = input.text.filter { it.isDigit() }.take(8)
+                    val formatted = buildString {
+                        digits.forEachIndexed { i, c ->
+                            if (i == 2 || i == 4) append('/')
+                            append(c)
+                        }
+                    }
+                    val fechaTexto = formatted
+                    val fechaCompleta = fechaTexto.matches(Regex("\\d{2}/\\d{2}/\\d{4}"))
+                    if (fechaCompleta) {
+                        val p = fechaTexto.split("/")
+                        val d = p[0].toIntOrNull() ?: 0
+                        val m = p[1].toIntOrNull() ?: 0
+                        val a = p[2].toIntOrNull() ?: 0
+                        if (d !in 1..31 || m !in 1..12 || a !in 2000..2026) {
+                            errorMsg = "Fecha inválida. Día 01-31, mes 01-12, año 2000-2026"
+                        } else {
+                            errorMsg = ""
+                        }
+                    } else {
+                        errorMsg = ""
+                    }
+                    fechaNacimiento = TextFieldValue(
+                        text = formatted,
+                        selection = TextRange(formatted.length)
+                    )
+                },
+                placeholder = { Text("DD/MM/AAAA", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp), singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
             )
@@ -232,7 +272,17 @@ fun AgregarMenorScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                enabled = nombre.isNotBlank() && fechaNacimiento.isNotBlank() && genero.isNotBlank() && !cargando
+                enabled = run {
+                    val t = fechaNacimiento.text
+                    val fechaOk = t.matches(Regex("\\d{2}/\\d{2}/\\d{4}")) && run {
+                        val p = t.split("/")
+                        val d = p[0].toIntOrNull() ?: 0
+                        val m = p[1].toIntOrNull() ?: 0
+                        val a = p[2].toIntOrNull() ?: 0
+                        d in 1..31 && m in 1..12 && a in 2000..2026
+                    }
+                    nombre.trim().length >= 2 && fechaOk && genero.isNotBlank() && !cargando
+                }
             ) {
                 if (cargando) CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                 else Text("Guardar menor", fontSize = 15.sp, fontWeight = FontWeight.Bold)

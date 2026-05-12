@@ -325,6 +325,12 @@ fun RegistroScreen(navController: NavController) {
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
+            Text(
+                text = "Mínimo 8 caracteres · Sin espacios",
+                fontSize = 11.sp,
+                color = Color(0xFF9CA3AF),
+                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
+            )
             // Confirmar contraseña
             Text(
                 text = "CONFIRMAR CONTRASEÑA",
@@ -387,6 +393,19 @@ fun RegistroScreen(navController: NavController) {
             // Botón crear cuenta
             Button(
                 onClick = {
+                    if (nombre.trim().length < 2) {
+                        errorMsg = "El nombre debe tener al menos 2 caracteres"
+                        return@Button
+                    }
+                    val emailRegex = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+                    if (!emailRegex.matches(correo.trim())) {
+                        errorMsg = "Correo inválido. Ej: nombre@correo.com"
+                        return@Button
+                    }
+                    if (contrasena.length < 8) {
+                        errorMsg = "La contraseña debe tener al menos 8 caracteres"
+                        return@Button
+                    }
                     if (contrasena != confirmar) {
                         errorMsg = "Las contraseñas no coinciden"
                         return@Button
@@ -431,7 +450,7 @@ fun RegistroScreen(navController: NavController) {
                     .height(50.dp),
                 shape = RoundedCornerShape(13.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = azulKidCare),
-                enabled = aceptoTerminos && !cargando && nombre.isNotBlank() && correo.isNotBlank() && contrasena.isNotBlank()
+                enabled = aceptoTerminos && !cargando && nombre.trim().length >= 2 && correo.isNotBlank() && contrasena.length >= 8
             ) {
                 if (cargando) {
                     CircularProgressIndicator(

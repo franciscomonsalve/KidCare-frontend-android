@@ -58,7 +58,7 @@ fun VincularMenorScreen(navController: NavController) {
                 ) { Text("← Volver", fontSize = 14.sp) }
                 Text("Vincular menor existente", fontSize = 22.sp, fontWeight = FontWeight.Bold,
                     color = Color.White, modifier = Modifier.padding(start = 8.dp))
-                Text("Ingresa el ID del menor para vincularte", fontSize = 13.sp,
+                Text("Solo para tutores: vincular un menor registrado en otro dispositivo", fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(start = 8.dp, top = 4.dp))
             }
         }
@@ -102,7 +102,7 @@ fun VincularMenorScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("🔗", fontSize = 56.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Ingresa el ID del menor que deseas vincular a tu cuenta. El tutor principal puede compartirte este número.",
+                Text("Ingresa el ID del menor para vincularlo a tu cuenta de tutor. Útil si lo registraste desde otro dispositivo o cuenta.",
                     fontSize = 14.sp, color = Color(0xFF6B7280), textAlign = TextAlign.Center,
                     lineHeight = 22.sp, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(28.dp))

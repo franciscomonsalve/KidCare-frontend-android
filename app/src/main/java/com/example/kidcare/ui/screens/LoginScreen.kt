@@ -161,6 +161,11 @@ fun LoginScreen(navController: NavController) {
 
                     Button(
                         onClick = {
+                            val emailRegex = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+                            if (!emailRegex.matches(correo.trim())) {
+                                errorMsg = "Correo inválido. Ej: nombre@correo.com"
+                                return@Button
+                            }
                             scope.launch {
                                 cargando = true
                                 errorMsg = ""
