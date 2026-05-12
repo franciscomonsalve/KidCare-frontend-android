@@ -35,6 +35,13 @@ interface KidCareApi {
     @POST("api/menores/vincular/{idMenor}")
     suspend fun vincularMenor(@Path("idMenor") idMenor: Int): Response<MenorResponse>
 
+    // ─── DELEGADOS ────────────────────────────────────────────────────────────
+    @GET("api/delegados/menor/{idMenor}")
+    suspend fun listarDelegados(@Path("idMenor") idMenor: Int): Response<List<DelegadoAccesoResponse>>
+
+    @DELETE("api/delegados/desvincular/{idMenor}")
+    suspend fun revocarDelegado(@Path("idMenor") idMenor: Int): Response<MessageResponse>
+
     // ─── INVITACIONES ─────────────────────────────────────────────────────────
     @POST("api/invitaciones/enviar")
     suspend fun enviarInvitacion(@Body body: InvitacionRequest): Response<MessageResponse>

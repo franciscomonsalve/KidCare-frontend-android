@@ -37,7 +37,7 @@ fun DelegadoScreen(navController: NavController, menorId: String = "") {
     LaunchedEffect(menorId) {
         val id = menorId.toIntOrNull() ?: return@LaunchedEffect
         cargando = true
-        val result = runCatching { RetrofitClient.accesoApi.listarDelegados(id) }
+        val result = runCatching { RetrofitClient.api.listarDelegados(id) }
         result.onSuccess { resp ->
             if (resp.isSuccessful) {
                 delegados.clear()
@@ -56,9 +56,9 @@ fun DelegadoScreen(navController: NavController, menorId: String = "") {
             text  = { Text("¿Estás seguro que deseas revocar el acceso de ${delegadoSeleccionado?.emailDelegado.orEmpty()}?") },
             confirmButton = {
                 TextButton(onClick = {
-                    val idDelegado = delegadoSeleccionado?.idDelegado ?: delegadoSeleccionado?.idAcceso ?: return@TextButton
+                    val idMenorInt = menorId.toIntOrNull() ?: return@TextButton
                     scope.launch {
-                        val result = runCatching { RetrofitClient.accesoApi.revocarDelegado(idDelegado) }
+                        val result = runCatching { RetrofitClient.api.revocarDelegado(idMenorInt) }
                         result.onSuccess { resp ->
                             if (resp.isSuccessful) {
                                 delegados.remove(delegadoSeleccionado)
