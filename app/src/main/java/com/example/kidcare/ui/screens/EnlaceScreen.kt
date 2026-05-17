@@ -2,9 +2,13 @@ package com.example.kidcare.ui.screens
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Color as AndroidColor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
@@ -41,6 +46,8 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -58,6 +65,22 @@ private suspend fun obtenerCoordenadas(client: FusedLocationProviderClient): Pai
             .addOnFailureListener { cont.resume(null) }
         cont.invokeOnCancellation { cts.cancel() }
     }
+
+private fun generarQrBitmap(texto: String, size: Int = 512): Bitmap? {
+    return try {
+        val writer = MultiFormatWriter()
+        val matrix = writer.encode(texto, BarcodeFormat.QR_CODE, size, size)
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        for (x in 0 until size) {
+            for (y in 0 until size) {
+                bmp.setPixel(x, y, if (matrix[x, y]) AndroidColor.BLACK else AndroidColor.WHITE)
+            }
+        }
+        bmp
+    } catch (e: Exception) {
+        null
+    }
+}
 
 @Composable
 fun EnlaceScreen(navController: NavController, menorId: String = "") {
@@ -78,6 +101,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
     var tokenGenerado        by remember { mutableStateOf<TokenMedicoResponse?>(null) }
     var segundos             by remember { mutableStateOf(20 * 60) }
     var canalSeleccionado    by remember { mutableStateOf("QR") }
+    var emailMedicoInput     by remember { mutableStateOf("") }
 
     // Datos del médico
     var nombreMedicoInput    by remember { mutableStateOf("") }
@@ -101,7 +125,14 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                        dvCalculado == rutRaw.last().uppercase().toString()
     val rutError     = rutRaw.length >= 8 && !rutValido
 
+    val emailValido  = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$").matches(emailMedicoInput)
+
     val enlaceGenerado = tokenGenerado != null
+
+    // QR bitmap generado una sola vez cuando se crea el token
+    val qrBitmap = remember(tokenGenerado?.token) {
+        tokenGenerado?.token?.let { generarQrBitmap(it) }
+    }
 
     LaunchedEffect(idMenor) {
         if (idMenor <= 0) return@LaunchedEffect
@@ -159,6 +190,23 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
             if (resp.isSuccessful) {
                 tokenGenerado = resp.body()
                 segundos = 20 * 60
+                // Si canal EMAIL: abrir cliente de correo con el token
+                if (canalSeleccionado == "EMAIL" && emailMedicoInput.isNotBlank()) {
+                    val token = resp.body()?.token ?: ""
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "message/rfc822"
+                        putExtra(Intent.EXTRA_EMAIL, arrayOf(emailMedicoInput.trim()))
+                        putExtra(Intent.EXTRA_SUBJECT, "KidCare — Acceso temporal al historial médico")
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            "Se ha generado un acceso temporal al historial médico.\n\n" +
+                            "Token de acceso: $token\n\n" +
+                            "Este token es válido por 20 minutos y solo puede usarse una vez.\n" +
+                            "El acceso requiere verificación de proximidad GPS."
+                        )
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Enviar por correo"))
+                }
             } else {
                 errorMsg = "No se pudo generar el token. Intenta nuevamente."
             }
@@ -199,6 +247,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
     val camposCompletos = nombreMedicoInput.trim().length >= 2 &&
                          apellidosMedicoInput.trim().length >= 2 &&
                          rutValido &&
+                         (canalSeleccionado == "QR" || emailValido) &&
                          (observacionesMenor.isEmpty() || seleccionadasIds.isNotEmpty())
 
     // ─── Disclaimer dialog ────────────────────────────────────────────────────
@@ -459,7 +508,6 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
 
-                        // Cabecera colapsable
                         Row(
                             modifier = Modifier.fillMaxWidth()
                                 .clickable { mostrarSeleccion = !mostrarSeleccion },
@@ -490,7 +538,6 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                             HorizontalDivider(color = Color(0xFFE5E7EB))
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Botones Todas / Ninguna
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 TextButton(
                                     onClick = { seleccionadasIds = seleccionadasIds + observacionesMenor.mapNotNull { it.id } },
@@ -576,11 +623,12 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 Text("CANAL", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6B7280),
                     letterSpacing = 0.6.sp, modifier = Modifier.padding(bottom = 10.dp))
 
-                // Opción QR
+                // ─── Opción QR ────────────────────────────────────────────────
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White, shape = RoundedCornerShape(14.dp))
+                        .clickable { canalSeleccionado = "QR" }
                         .border(
                             width = if (canalSeleccionado == "QR") 2.dp else 1.dp,
                             color = if (canalSeleccionado == "QR") azulKidCare else Color(0xFFE5E7EB),
@@ -606,11 +654,12 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Opción Email
+                // ─── Opción Email ─────────────────────────────────────────────
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White, shape = RoundedCornerShape(14.dp))
+                        .clickable { canalSeleccionado = "EMAIL" }
                         .border(
                             width = if (canalSeleccionado == "EMAIL") 2.dp else 1.dp,
                             color = if (canalSeleccionado == "EMAIL") azulKidCare else Color(0xFFE5E7EB),
@@ -625,7 +674,39 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                             Text("Correo electrónico", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                             Text("Enviar al correo del médico", fontSize = 12.sp, color = Color(0xFF6B7280))
                         }
+                        if (canalSeleccionado == "EMAIL") {
+                            Box(modifier = Modifier.size(20.dp).background(azulKidCare, shape = RoundedCornerShape(50)),
+                                contentAlignment = Alignment.Center) {
+                                Text("✓", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
+                }
+
+                // ─── Campo email (solo canal EMAIL) ───────────────────────────
+                if (canalSeleccionado == "EMAIL") {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value         = emailMedicoInput,
+                        onValueChange = { emailMedicoInput = it },
+                        label         = { Text("Correo del médico", fontSize = 13.sp) },
+                        placeholder   = { Text("medico@clinica.cl", fontSize = 13.sp) },
+                        modifier      = Modifier.fillMaxWidth(),
+                        singleLine    = true,
+                        shape         = RoundedCornerShape(10.dp),
+                        isError       = emailMedicoInput.isNotBlank() && !emailValido,
+                        supportingText = {
+                            when {
+                                emailMedicoInput.isNotBlank() && !emailValido ->
+                                    Text("Ingresa un correo válido", color = Color(0xFFDC2626), fontSize = 11.sp)
+                                emailValido ->
+                                    Text("Correo válido ✓", color = Color(0xFF059669), fontSize = 11.sp)
+                                else ->
+                                    Text("Se abrirá tu aplicación de correo al generar el enlace",
+                                        color = Color(0xFF9CA3AF), fontSize = 11.sp)
+                            }
+                        }
+                    )
                 }
 
                 if (errorMsg.isNotEmpty()) {
@@ -680,19 +761,38 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Muestra este token al médico", fontSize = 13.sp, color = Color(0xFF6B7280),
-                            modifier = Modifier.padding(bottom = 16.dp))
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF2F5FB), shape = RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFFE5E7EB), shape = RoundedCornerShape(12.dp))
-                                .padding(20.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(tokenGenerado?.token ?: "", fontSize = 14.sp, fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF374151), textAlign = TextAlign.Center, lineHeight = 22.sp)
+                        if (canalSeleccionado == "QR" && qrBitmap != null) {
+                            // ─── Mostrar QR ───────────────────────────────────
+                            Text("Muestra este código QR al médico",
+                                fontSize = 13.sp, color = Color(0xFF6B7280),
+                                modifier = Modifier.padding(bottom = 16.dp))
+                            Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = "Código QR del token",
+                                modifier = Modifier.size(220.dp)
+                            )
+                        } else {
+                            // ─── Mostrar token como texto (canal EMAIL o sin QR) ─
+                            Text(
+                                if (canalSeleccionado == "EMAIL") "Token enviado al correo del médico"
+                                else "Muestra este token al médico",
+                                fontSize = 13.sp, color = Color(0xFF6B7280),
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFF2F5FB), shape = RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color(0xFFE5E7EB), shape = RoundedCornerShape(12.dp))
+                                    .padding(20.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(tokenGenerado?.token ?: "", fontSize = 14.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color(0xFF374151), textAlign = TextAlign.Center,
+                                    lineHeight = 22.sp)
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -733,7 +833,8 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Canal", fontSize = 13.sp, color = Color(0xFF6B7280))
-                            Text("QR", fontSize = 13.sp, color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
+                            Text(canalSeleccionado, fontSize = 13.sp,
+                                color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
                         }
                         if (nombreMedicoInput.isNotBlank()) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
