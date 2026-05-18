@@ -3,7 +3,6 @@ package com.example.kidcare.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -195,7 +194,6 @@ fun HomeScreen(navController: NavController) {
                     }
 
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                        // Ver bitácora — ancho completo
                         Box(
                             modifier = Modifier.fillMaxWidth()
                                 .background(Color.White, shape = RoundedCornerShape(18.dp))
@@ -211,42 +209,34 @@ fun HomeScreen(navController: NavController) {
                                     color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                             }
                         }
-                        // Compartir con médico + Delegados — fila horizontal
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(11.dp)
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(Color.White, shape = RoundedCornerShape(18.dp))
+                                .clickable { if (menorId > 0) navController.navigate(Rutas.enlace(menorId)) }
+                                .padding(18.dp)
                         ) {
-                            Box(
-                                modifier = Modifier.weight(1f).fillMaxHeight()
-                                    .background(Color.White, shape = RoundedCornerShape(18.dp))
-                                    .clickable { if (menorId > 0) navController.navigate(Rutas.enlace(menorId)) }
-                                    .padding(18.dp)
-                            ) {
-                                Column {
-                                    Text("🔗", fontSize = 22.sp)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Compartir\ncon médico", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFF0F172A), lineHeight = 18.sp)
-                                    Text("Enlace temporal", fontSize = 11.sp,
-                                        color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
-                                }
+                            Column {
+                                Text("🔗", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Compartir\ncon médico", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF0F172A), lineHeight = 18.sp)
+                                Text("Enlace temporal", fontSize = 11.sp,
+                                    color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                             }
-                            Box(
-                                modifier = Modifier.weight(1f).fillMaxHeight()
-                                    .background(Color.White, shape = RoundedCornerShape(18.dp))
-                                    .clickable { if (menorId > 0) navController.navigate(Rutas.delegados(menorId)) }
-                                    .padding(18.dp)
-                            ) {
-                                Column {
-                                    Text("👥", fontSize = 22.sp)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Delegados", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFF0F172A))
-                                    Text("Gestionar accesos", fontSize = 11.sp,
-                                        color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
-                                }
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(Color.White, shape = RoundedCornerShape(18.dp))
+                                .clickable { if (menorId > 0) navController.navigate(Rutas.delegados(menorId)) }
+                                .padding(18.dp)
+                        ) {
+                            Column {
+                                Text("👥", fontSize = 22.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Delegados", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF0F172A))
+                                Text("Gestionar accesos", fontSize = 11.sp,
+                                    color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                             }
                         }
                     }
