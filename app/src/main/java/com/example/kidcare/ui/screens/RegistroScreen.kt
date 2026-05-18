@@ -28,6 +28,9 @@ import androidx.navigation.NavController
 import com.example.kidcare.data.AuthRepository
 import com.example.kidcare.data.SessionManager
 import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.filtrarNombre
+import com.example.kidcare.data.validarNombre
+import com.example.kidcare.data.validarPassword
 import com.example.kidcare.data.model.RegistroRequest
 import com.example.kidcare.navigation.Rutas
 import com.example.kidcare.ui.theme.campoColores
@@ -202,11 +205,17 @@ fun RegistroScreen(navController: NavController) {
             )
             OutlinedTextField(
                 value = nombre,
-                onValueChange = { nombre = it; errorMsg = "" },
+                onValueChange = { nombre = filtrarNombre(it); errorMsg = "" },
                 placeholder = { Text("María González", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
+                isError = nombre.isNotBlank() && validarNombre(nombre) != null,
+                supportingText = {
+                    if (nombre.isNotBlank() && validarNombre(nombre) != null)
+                        Text(validarNombre(nombre)!!, fontSize = 11.sp, color = Color(0xFFDC2626))
+                },
+                colors = campoColores()
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -391,27 +400,12 @@ fun RegistroScreen(navController: NavController) {
             // Botón crear cuenta
             Button(
                 onClick = {
-                    if (nombre.trim().length < 2) {
-                        errorMsg = "El nombre debe tener al menos 2 caracteres"
-                        return@Button
-                    }
-                    val emailRegex = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
-                    if (!emailRegex.matches(correo.trim())) {
+                    validarNombre(nombre)?.let { errorMsg = it; return@Button }
+                    if (!Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$").matches(correo.trim())) {
                         errorMsg = "Correo inválido. Ej: nombre@correo.com"
                         return@Button
                     }
-                    if (contrasena.length < 8) {
-                        errorMsg = "La contraseña debe tener al menos 8 caracteres"
-                        return@Button
-                    }
-                    if (contrasena.none { it.isUpperCase() }) {
-                        errorMsg = "La contraseña debe contener al menos una mayúscula"
-                        return@Button
-                    }
-                    if (contrasena.all { it.isLetterOrDigit() }) {
-                        errorMsg = "La contraseña debe contener al menos un símbolo (!@#\$...)"
-                        return@Button
-                    }
+                    validarPassword(contrasena)?.let { errorMsg = it; return@Button }
                     if (contrasena != confirmar) {
                         errorMsg = "Las contraseñas no coinciden"
                         return@Button

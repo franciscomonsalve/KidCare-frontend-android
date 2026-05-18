@@ -38,8 +38,9 @@ data class MenorResponse(
     val idMenor: Int = 0,
     val nombre: String? = null,
     val fechaNacimiento: String? = null,
-    val sexo: String? = null,       // el backend llama "sexo" al campo de género
-    val emoji: String? = null
+    val sexo: String? = null,
+    val emoji: String? = null,
+    val esDelegado: Boolean = false
 )
 
 // ─── DELEGADO / INVITACIÓN ────────────────────────────────────────────────────
@@ -127,7 +128,10 @@ data class GenerarTokenRequest(
     val rutMedico: String? = null,
     val latitudPadre: String? = null,
     val longitudPadre: String? = null,
-    val observacionIds: List<String>? = null
+    val observacionIds: List<String>? = null,
+    val nombreMenor: String? = null,
+    val nombreTutor: String? = null,
+    val edadMenor: Int? = null
 )
 
 data class TokenMedicoResponse(

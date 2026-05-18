@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.CambiarPasswordRequest
+import com.example.kidcare.data.validarPassword
 import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
@@ -41,11 +42,12 @@ fun CambiarContrasenaScreen(navController: NavController) {
     var errorMsg      by remember { mutableStateOf("") }
     val scope         = rememberCoroutineScope()
 
-    // Validaciones — refleja la política del backend: ≥8 chars, 1 mayúscula, 1 símbolo
-    val tieneLongitud   = contrasenaNueva.length >= 8
-    val tieneMayuscula  = contrasenaNueva.any { it.isUpperCase() }
-    val tieneSimbolo    = contrasenaNueva.any { !it.isLetterOrDigit() }
-    val contrasenaValida    = tieneLongitud && tieneMayuscula && tieneSimbolo
+    // Validaciones — refleja la política del backend: ≥8 chars, 1 mayúscula, 1 dígito, 1 símbolo
+    val tieneLongitud    = contrasenaNueva.length >= 8
+    val tieneMayuscula   = contrasenaNueva.any { it.isUpperCase() }
+    val tieneDigito      = contrasenaNueva.any { it.isDigit() }
+    val tieneSimbolo     = contrasenaNueva.any { !it.isLetterOrDigit() }
+    val contrasenaValida     = tieneLongitud && tieneMayuscula && tieneDigito && tieneSimbolo
     val contrasenasCoinciden = contrasenaNueva == confirmarContrasena
     val formularioValido = contrasenaActual.isNotBlank() &&
             contrasenaValida &&
@@ -196,7 +198,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf(tieneLongitud, tieneMayuscula, tieneSimbolo).forEach { cumple ->
+                        listOf(tieneLongitud, tieneMayuscula, tieneDigito, tieneSimbolo).forEach { cumple ->
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -212,6 +214,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                         text = when {
                             !tieneLongitud  -> "Mínimo 8 caracteres"
                             !tieneMayuscula -> "Agrega una mayúscula"
+                            !tieneDigito    -> "Agrega un número"
                             !tieneSimbolo   -> "Agrega un símbolo especial (!@#\$...)"
                             else            -> "✓ Contraseña segura"
                         },
@@ -274,6 +277,11 @@ fun CambiarContrasenaScreen(navController: NavController) {
 
                 Button(
                     onClick = {
+                        validarPassword(contrasenaNueva)?.let { errorMsg = it; return@Button }
+                        if (contrasenaNueva != confirmarContrasena) {
+                            errorMsg = "Las contraseñas no coinciden"
+                            return@Button
+                        }
                         scope.launch {
                             cargando = true
                             errorMsg = ""

@@ -45,6 +45,7 @@ import com.example.kidcare.data.calcularDV
 import com.example.kidcare.data.formatearRut
 import com.example.kidcare.data.soloLetrasReg
 import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.model.GenerarHistorialRequest
 import com.example.kidcare.data.model.GenerarTokenRequest
 import com.example.kidcare.data.model.TokenMedicoResponse
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -106,7 +107,18 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
     val idMenor        = menorId.toIntOrNull() ?: 0
     val locationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val nombreTutor    = remember { SessionManager(context).getNombreCompleto() ?: "el tutor" }
+    val session        = remember { SessionManager(context) }
+    val nombreTutor    = remember { session.getNombreCompleto() ?: "el tutor" }
+    val menorInfo      = remember(idMenor) { session.getMenores().find { it.idMenor == idMenor } }
+    val nombreMenor    = remember(menorInfo) { menorInfo?.nombre ?: "" }
+    val edadMenor      = remember(menorInfo) {
+        menorInfo?.fechaNacimiento?.let { fNac ->
+            try {
+                val nac = java.time.LocalDate.parse(fNac)
+                java.time.Period.between(nac, java.time.LocalDate.now()).years
+            } catch (e: Exception) { null }
+        }
+    }
 
     var cargando             by remember { mutableStateOf(false) }
     var obtenendoGps         by remember { mutableStateOf(false) }
@@ -130,9 +142,10 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
     // Disclaimer
     var mostrarDisclaimer    by remember { mutableStateOf(false) }
 
-    // Derivados del RUT
-    val rutRaw       = rutMedicoInput.replace(".", "").replace("-", "")
-    val rutCuerpo    = if (rutRaw.length >= 2) rutRaw.dropLast(1) else rutRaw
+    // rutMedicoInput ahora guarda solo dígitos+K (sin puntos ni guión)
+    // La visualización formateada la hace RutVisualTransformation
+    val rutRaw    = rutMedicoInput   // ya es raw
+    val rutCuerpo = if (rutRaw.length >= 2) rutRaw.dropLast(1) else rutRaw
     val dvCalculado  = if (rutCuerpo.length in 6..8) calcularDV(rutCuerpo) else ""
     val rutValido    = rutRaw.length in 8..9 && rutCuerpo.all { it.isDigit() } &&
                        dvCalculado == rutRaw.last().uppercase().toString()
@@ -186,16 +199,31 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
             return
         }
         cargando = true
+        // Genera el resumen de IA con las observaciones seleccionadas antes de crear el token,
+        // para que la página web del médico lo encuentre al verificar.
+        if (seleccionadasIds.isNotEmpty()) {
+            runCatching {
+                RetrofitClient.historialApi.generarHistorial(
+                    GenerarHistorialRequest(
+                        idMenor = idMenor,
+                        idInteracciones = seleccionadasIds.toList()
+                    )
+                )
+            }
+        }
         val result = runCatching {
             RetrofitClient.accesoApi.generarTokenMedico(
                 GenerarTokenRequest(
                     idMenor        = idMenor,
                     nombreMedico   = "$nombreMedicoInput $apellidosMedicoInput".trim(),
-                    rutMedico      = rutMedicoInput,
+                    rutMedico      = if (rutMedicoInput.length >= 2) formatearRut(rutMedicoInput) else rutMedicoInput,
                     latitudPadre   = coords.first,
                     longitudPadre  = coords.second,
                     observacionIds = if (seleccionadasIds.size < observacionesMenor.size)
-                                         seleccionadasIds.toList() else null
+                                         seleccionadasIds.toList() else null,
+                    nombreMenor    = nombreMenor,
+                    nombreTutor    = nombreTutor,
+                    edadMenor      = edadMenor
                 )
             )
         }
@@ -304,7 +332,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Médico: $nombreMedicoInput $apellidosMedicoInput",
                                 fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
-                            Text("RUT: $rutMedicoInput",
+                            Text("RUT: ${if (rutMedicoInput.length >= 2) formatearRut(rutMedicoInput) else rutMedicoInput}",
                                 fontSize = 12.sp, color = Color(0xFF6B7280))
                         }
                     }
@@ -473,12 +501,16 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         OutlinedTextField(
                             value         = rutMedicoInput,
                             onValueChange = { nuevo ->
-                                val raw = nuevo.replace(".", "").replace("-", "")
-                                    .uppercase().filter { it.isDigit() || it == 'K' }.take(9)
-                                rutMedicoInput = if (raw.length >= 2) formatearRut(raw) else raw
+                                // Solo almacena dígitos+K; el formato lo muestra VisualTransformation
+                                rutMedicoInput = nuevo
+                                    .replace(".", "").replace("-", "")
+                                    .uppercase()
+                                    .filter { it.isDigit() || it == 'K' }
+                                    .take(9)
                             },
+                            visualTransformation = com.example.kidcare.data.RutVisualTransformation,
                             label          = { Text("RUT del médico", fontSize = 13.sp) },
-                            placeholder    = { Text("Ej: 12.345.678-9", fontSize = 13.sp) },
+                            placeholder    = { Text("Sin puntos ni guión: 12345678K", fontSize = 12.sp) },
                             modifier       = Modifier.fillMaxWidth(),
                             singleLine     = true,
                             shape          = RoundedCornerShape(10.dp),

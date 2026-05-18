@@ -124,9 +124,25 @@ fun HomeScreen(navController: NavController) {
                                         Column {
                                             Text(menor.nombre.orEmpty(), fontSize = 13.sp, fontWeight = FontWeight.Bold,
                                                 color = if (seleccionado) azulKidCare else Color.White)
-                                            Text(menor.sexo.orEmpty(), fontSize = 11.sp,
-                                                color = if (seleccionado) azulKidCare.copy(alpha = 0.7f)
-                                                else Color.White.copy(alpha = 0.6f))
+                                            if (menor.esDelegado) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(top = 3.dp)
+                                                        .background(
+                                                            if (seleccionado) Color(0xFFFEF3C7)
+                                                            else Color.White.copy(alpha = 0.18f),
+                                                            RoundedCornerShape(4.dp)
+                                                        )
+                                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                                ) {
+                                                    Text("DELEGADO", fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                                                        color = if (seleccionado) Color(0xFFD97706) else Color.White)
+                                                }
+                                            } else {
+                                                Text(menor.sexo.orEmpty(), fontSize = 11.sp,
+                                                    color = if (seleccionado) azulKidCare.copy(alpha = 0.7f)
+                                                    else Color.White.copy(alpha = 0.6f))
+                                            }
                                         }
                                     }
                                 }

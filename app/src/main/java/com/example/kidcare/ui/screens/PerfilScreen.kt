@@ -165,38 +165,81 @@ fun PerfilScreen(navController: NavController) {
             }
         }
 
-        // SECCIÓN: Mis Hijos — datos reales desde API/caché
+        // SECCIÓN: Mis Hijos
         item {
-            SeccionTitulo("MIS HIJOS")
-            CardContenedor {
-                if (cargando) {
+            val propios   = menores.filter { !it.esDelegado }
+            val delegados = menores.filter {  it.esDelegado }
+
+            if (cargando) {
+                SeccionTitulo("MIS HIJOS")
+                CardContenedor {
                     Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = azulKidCare, modifier = Modifier.size(24.dp))
                     }
-                } else if (menores.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay menores registrados.", fontSize = 13.sp, color = Color(0xFF6B7280))
+                }
+            } else {
+                // ── Hijos propios ──────────────────────────────────────────────
+                SeccionTitulo("MIS HIJOS")
+                CardContenedor {
+                    if (propios.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                            Text("No hay menores registrados.", fontSize = 13.sp, color = Color(0xFF6B7280))
+                        }
+                    } else {
+                        propios.forEachIndexed { index, menor ->
+                            FilaMenu(
+                                emoji  = menor.emoji ?: "🧒",
+                                titulo = "${menor.nombre.orEmpty()} · ${menor.sexo.orEmpty()}",
+                                onClick = { navController.navigate(Rutas.perfilMenor(menor.idMenor)) }
+                            )
+                            DividerPersonalizado()
+                            FilaMenu(
+                                emoji  = "👥",
+                                titulo = "Delegados de ${menor.nombre.orEmpty()}",
+                                onClick = { navController.navigate(Rutas.delegados(menor.idMenor)) }
+                            )
+                            if (index < propios.size - 1)
+                                HorizontalDivider(color = Color(0xFFF2F5FB), thickness = 6.dp)
+                        }
                     }
-                } else {
-                    menores.forEachIndexed { index, menor ->
-                        FilaMenu(
-                            emoji = menor.emoji ?: "🧒",
-                            titulo = "${menor.nombre.orEmpty()} · ${menor.sexo.orEmpty()}",
-                            onClick = { navController.navigate(Rutas.perfilMenor(menor.idMenor)) }
-                        )
+                }
 
-                        DividerPersonalizado()
-
-                        // Fila de Delegados vinculada al niño
-                        FilaMenu(
-                            emoji = "👥",
-                            titulo = "Delegados de ${menor.nombre.orEmpty()}",
-                            onClick = { navController.navigate(Rutas.delegados(menor.idMenor)) }
-                        )
-
-                        // Solo poner un separador visual fuerte si hay más hijos después
-                        if (index < menores.size - 1) {
-                            HorizontalDivider(color = Color(0xFFF2F5FB), thickness = 6.dp)
+                // ── Acceso como delegado ───────────────────────────────────────
+                if (delegados.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(0.dp))
+                    SeccionTitulo("ACCESO COMO DELEGADO")
+                    CardContenedor {
+                        delegados.forEachIndexed { index, menor ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { navController.navigate(Rutas.bitacora(menor.idMenor)) }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(Color(0xFFFEF3C7), shape = RoundedCornerShape(10.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) { Text(menor.emoji ?: "🧒", fontSize = 18.sp) }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(menor.nombre.orEmpty(), fontSize = 14.sp,
+                                        color = Color(0xFF0F172A), fontWeight = FontWeight.Medium)
+                                    Text("Solo lectura · sin gestión de delegados",
+                                        fontSize = 11.sp, color = Color(0xFF6B7280))
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color(0xFFFEF3C7), RoundedCornerShape(6.dp))
+                                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                                ) {
+                                    Text("DELEGADO", fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
+                                }
+                            }
+                            if (index < delegados.size - 1) DividerPersonalizado()
                         }
                     }
                 }

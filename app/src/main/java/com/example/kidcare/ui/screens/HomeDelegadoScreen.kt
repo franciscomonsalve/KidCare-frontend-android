@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -148,47 +149,66 @@ fun HomeDelegadoScreen(navController: NavController) {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Menor autorizado
-                    Text(
-                        text = "AUTORIZADO",
-                        fontSize = 10.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        letterSpacing = 0.8.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     if (cargandoMenores) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    } else if (menorSeleccionado != null) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    Color.White.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(14.dp)
-                                )
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    } else if (menores.size <= 1) {
+                        // Un solo menor — vista compacta
+                        menorSeleccionado?.let { menor ->
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+                                    .padding(horizontal = 16.dp, vertical = 10.dp)
                             ) {
-                                Text(menorSeleccionado!!.emoji ?: "🧒", fontSize = 28.sp)
-                                Column {
-                                    Text(
-                                        text = menorSeleccionado!!.nombre.orEmpty(),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        text = menorSeleccionado!!.sexo.orEmpty(),
-                                        fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.7f)
-                                    )
+                                Row(verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text(menor.emoji ?: "🧒", fontSize = 26.sp)
+                                    Column {
+                                        Text(menor.nombre.orEmpty(), fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("Acceso delegado", fontSize = 11.sp,
+                                            color = Color.White.copy(alpha = 0.65f))
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Múltiples menores — selector horizontal
+                        Text("MENORES AUTORIZADOS", fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.6f), letterSpacing = 0.8.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(menores) { menor ->
+                                val sel = menor.idMenor == menorSeleccionado?.idMenor
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            if (sel) Color.White.copy(alpha = 0.25f)
+                                            else Color.White.copy(alpha = 0.1f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .clickable { menorSeleccionado = menor }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(menor.emoji ?: "🧒", fontSize = 18.sp)
+                                        Column {
+                                            Text(menor.nombre.orEmpty(), fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold, color = Color.White)
+                                            Box(
+                                                modifier = Modifier
+                                                    .background(Color(0xFFFEF3C7).copy(alpha = 0.9f), RoundedCornerShape(4.dp))
+                                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                                            ) {
+                                                Text("DELEGADO", fontSize = 8.sp,
+                                                    fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

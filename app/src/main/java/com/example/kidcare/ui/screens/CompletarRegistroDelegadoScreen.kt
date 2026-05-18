@@ -23,7 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
+import com.example.kidcare.data.filtrarNombre
 import com.example.kidcare.data.model.CompletarRegistroRequest
+import com.example.kidcare.data.validarNombre
+import com.example.kidcare.data.validarPassword
 import com.example.kidcare.navigation.Rutas
 import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
@@ -171,7 +174,7 @@ fun CompletarRegistroDelegadoScreen(navController: NavController) {
                     if (!tieneCuenta) {
                         OutlinedTextField(
                             value = nombreCompleto,
-                            onValueChange = { nombreCompleto = it; errorMsg = "" },
+                            onValueChange = { nombreCompleto = filtrarNombre(it); errorMsg = "" },
                             label = { Text("Nombre completo", fontSize = 13.sp, color = negro) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -251,6 +254,14 @@ fun CompletarRegistroDelegadoScreen(navController: NavController) {
 
                     Button(
                         onClick = {
+                            if (!tieneCuenta) {
+                                validarNombre(nombreCompleto)?.let { errorMsg = it; return@Button }
+                                validarPassword(password)?.let { errorMsg = it; return@Button }
+                                if (password != confirmar) {
+                                    errorMsg = "Las contraseñas no coinciden"
+                                    return@Button
+                                }
+                            }
                             scope.launch {
                                 cargando = true
                                 errorMsg = ""

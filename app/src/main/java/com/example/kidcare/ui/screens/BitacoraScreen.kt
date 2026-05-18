@@ -169,8 +169,8 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
                     Triple("${interacciones.size}", "Total", Color(0xFFF2F5FB)),
-                    Triple("${interacciones.count { it.tipo == "CHATBOT" }}", "Chatbot", Color(0xFFEFF6FF)),
-                    Triple("${interacciones.count { it.tipo == "MANUAL" }}", "Manual", Color(0xFFECFDF5)),
+                    Triple("${interacciones.count { it.origen?.uppercase() == "CHATBOT" }}", "Chatbot", Color(0xFFEFF6FF)),
+                    Triple("${interacciones.count { it.origen?.uppercase() != "CHATBOT" && it.origen != null }}", "Manual", Color(0xFFECFDF5)),
                 ).forEach { (valor, label, _) ->
                     Box(modifier = Modifier.weight(1f).background(Color.White, shape = RoundedCornerShape(12.dp)).padding(12.dp),
                         contentAlignment = Alignment.Center) {
@@ -242,7 +242,7 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                 ) {
                     Box(modifier = Modifier.padding(top = 4.dp).size(8.dp)
                         .background(
-                            if (obs.tipo == "CHATBOT") azulKidCare else Color(0xFF059669),
+                            if (obs.origen?.uppercase() == "CHATBOT") azulKidCare else Color(0xFF059669),
                             shape = RoundedCornerShape(50)))
 
                     Column(modifier = Modifier.weight(1f)) {
@@ -251,12 +251,12 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                             Box(
                                 modifier = Modifier
                                     .background(
-                                        if (obs.tipo == "CHATBOT") Color(0xFFEFF6FF) else Color(0xFFECFDF5),
+                                        if (obs.origen?.uppercase() == "CHATBOT") Color(0xFFEFF6FF) else Color(0xFFECFDF5),
                                         shape = RoundedCornerShape(20.dp))
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
-                                Text(obs.tipo.orEmpty(), fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                                    color = if (obs.tipo == "CHATBOT") azulKidCare else Color(0xFF059669))
+                                Text(obs.origen.orEmpty(), fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                                    color = if (obs.origen?.uppercase() == "CHATBOT") azulKidCare else Color(0xFF059669))
                             }
                         }
                         Spacer(modifier = Modifier.height(6.dp))
@@ -269,7 +269,7 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                                     textoEditado = obs.observaciones.orEmpty()
                                     mostrarEditar = true
                                 })
-                            if (obs.tipo == "MANUAL") {
+                            if (obs.origen?.uppercase() != "CHATBOT") {
                                 Text("Eliminar", fontSize = 12.sp, color = Color(0xFFDC2626), fontWeight = FontWeight.Bold,
                                     modifier = Modifier.clickable {
                                         interaccionEliminar = obs
