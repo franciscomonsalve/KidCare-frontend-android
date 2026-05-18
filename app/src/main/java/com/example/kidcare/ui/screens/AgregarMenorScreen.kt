@@ -23,6 +23,7 @@ import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.MenorRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 // Convierte DD/MM/AAAA → yyyy-MM-dd (formato que espera el backend LocalDate)
@@ -174,8 +175,7 @@ fun AgregarMenorScreen(navController: NavController) {
                 placeholder = { Text("Ej: Sofía", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp), singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                colors = campoColores()
             )
             if (nombre.isNotEmpty() && nombre.trim().length < 2) {
                 Text(
@@ -226,8 +226,7 @@ fun AgregarMenorScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp), singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                colors = campoColores()
             )
 
             Spacer(modifier = Modifier.height(14.dp))

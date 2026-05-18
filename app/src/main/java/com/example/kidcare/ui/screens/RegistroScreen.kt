@@ -30,6 +30,7 @@ import com.example.kidcare.data.SessionManager
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.RegistroRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 data class Pais(val nombre: String, val bandera: String, val codigo: String, val maxDigitos: Int)
@@ -245,10 +246,7 @@ fun RegistroScreen(navController: NavController) {
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = azulKidCare,
-                        unfocusedBorderColor = Color(0xFFE5E7EB)
-                    )
+                    colors = campoColores()
                 )
             }
 
@@ -328,7 +326,7 @@ fun RegistroScreen(navController: NavController) {
             Text(
                 text = "Mín. 8 caracteres · 1 mayúscula · 1 símbolo (!@#\$...) · Sin espacios",
                 fontSize = 11.sp,
-                color = Color(0xFF9CA3AF),
+                color = Color(0xFF6B7280),
                 modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
             )
             // Confirmar contraseña

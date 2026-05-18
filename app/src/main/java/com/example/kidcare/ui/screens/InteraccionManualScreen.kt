@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.InteraccionRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -131,13 +132,12 @@ fun InteraccionManualScreen(navController: NavController, menorId: String = "") 
                 placeholder = { Text("Describe los síntomas observados...", color = Color(0xFF9CA3AF)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp), minLines = 4,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                colors = campoColores()
             )
             Text(
                 text = "${textoLibre.length}/$maxChars",
                 fontSize = 11.sp,
-                color = if (textoLibre.length >= maxChars) Color(0xFFDC2626) else Color(0xFF9CA3AF),
+                color = if (textoLibre.length >= maxChars) Color(0xFFDC2626) else Color(0xFF6B7280),
                 modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End).padding(top = 2.dp)
             )
 

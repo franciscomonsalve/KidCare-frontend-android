@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.CambiarPasswordRequest
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -157,10 +158,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = azulKidCare,
-                        unfocusedBorderColor = Color(0xFFE5E7EB)
-                    )
+                    colors = campoColores()
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -188,10 +186,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = azulKidCare,
-                        unfocusedBorderColor = Color(0xFFE5E7EB)
-                    )
+                    colors = campoColores()
                 )
 
                 // Indicador de seguridad (refleja política real del backend)
@@ -221,7 +216,7 @@ fun CambiarContrasenaScreen(navController: NavController) {
                             else            -> "✓ Contraseña segura"
                         },
                         fontSize = 11.sp,
-                        color = if (contrasenaValida) Color(0xFF059669) else Color(0xFF9CA3AF),
+                        color = if (contrasenaValida) Color(0xFF059669) else Color(0xFF6B7280),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -251,12 +246,8 @@ fun CambiarContrasenaScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (!contrasenasCoinciden && confirmarContrasena.isNotBlank())
-                            Color(0xFFDC2626) else azulKidCare,
-                        unfocusedBorderColor = if (!contrasenasCoinciden && confirmarContrasena.isNotBlank())
-                            Color(0xFFDC2626) else Color(0xFFE5E7EB)
-                    )
+                    isError = !contrasenasCoinciden && confirmarContrasena.isNotBlank(),
+                    colors = campoColores()
                 )
 
                 // Error contraseñas no coinciden

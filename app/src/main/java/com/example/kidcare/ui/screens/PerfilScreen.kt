@@ -175,7 +175,7 @@ fun PerfilScreen(navController: NavController) {
                     }
                 } else if (menores.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay menores registrados.", fontSize = 13.sp, color = Color(0xFF9CA3AF))
+                        Text("No hay menores registrados.", fontSize = 13.sp, color = Color(0xFF6B7280))
                     }
                 } else {
                     menores.forEachIndexed { index, menor ->
@@ -291,7 +291,7 @@ fun FilaMenu(emoji: String, titulo: String, showIcon: Boolean = true, onClick: (
             color = Color(0xFF0F172A),
             modifier = Modifier.weight(1f)
         )
-        Text("›", fontSize = 20.sp, color = Color(0xFF9CA3AF))
+        Text("›", fontSize = 20.sp, color = Color(0xFF6B7280))
     }
 }
 

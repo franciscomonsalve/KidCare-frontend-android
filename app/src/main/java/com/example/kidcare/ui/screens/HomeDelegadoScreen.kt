@@ -278,7 +278,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                         Text(
                             text = "${interacciones.size} registros",
                             fontSize = 11.sp,
-                            color = Color(0xFF9CA3AF)
+                            color = Color(0xFF6B7280)
                         )
                     }
                 }
@@ -310,7 +310,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                     Text(
                         text = "Sin asistente de IA",
                         fontSize = 12.sp,
-                        color = Color(0xFF9CA3AF)
+                        color = Color(0xFF6B7280)
                     )
                 }
             }
@@ -355,7 +355,7 @@ fun HomeDelegadoScreen(navController: NavController) {
         } else if (interacciones.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                    Text("No hay interacciones registradas.", fontSize = 13.sp, color = Color(0xFF9CA3AF))
+                    Text("No hay interacciones registradas.", fontSize = 13.sp, color = Color(0xFF6B7280))
                 }
             }
         } else {
@@ -417,11 +417,11 @@ fun HomeDelegadoScreen(navController: NavController) {
                             Text(
                                 text = obs.fecha.orEmpty(),
                                 fontSize = 11.sp,
-                                color = Color(0xFF9CA3AF)
+                                color = Color(0xFF6B7280)
                             )
                         }
                     }
-                    Text("›", fontSize = 18.sp, color = Color(0xFF9CA3AF))
+                    Text("›", fontSize = 18.sp, color = Color(0xFF6B7280))
                 }
             }
         }
@@ -466,7 +466,7 @@ fun HomeDelegadoScreen(navController: NavController) {
                             text = label,
                             fontSize = 10.sp,
                             fontWeight = if (activo) FontWeight.Bold else FontWeight.Normal,
-                            color = if (activo) verdePrincipal else Color(0xFF9CA3AF)
+                            color = if (activo) verdePrincipal else Color(0xFF6B7280)
                         )
                     }
                 }

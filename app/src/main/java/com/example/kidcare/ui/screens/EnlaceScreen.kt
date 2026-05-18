@@ -445,7 +445,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                     Text("Mínimo 2 caracteres", color = Color(0xFFDC2626), fontSize = 11.sp)
                                 else
                                     Text("${nombreMedicoInput.length}/25", fontSize = 11.sp,
-                                        color = Color(0xFF9CA3AF), modifier = Modifier.fillMaxWidth(),
+                                        color = Color(0xFF6B7280), modifier = Modifier.fillMaxWidth(),
                                         textAlign = TextAlign.End)
                             }
                         )
@@ -466,7 +466,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                     Text("Mínimo 2 caracteres", color = Color(0xFFDC2626), fontSize = 11.sp)
                                 else
                                     Text("${apellidosMedicoInput.length}/35", fontSize = 11.sp,
-                                        color = Color(0xFF9CA3AF), modifier = Modifier.fillMaxWidth(),
+                                        color = Color(0xFF6B7280), modifier = Modifier.fillMaxWidth(),
                                         textAlign = TextAlign.End)
                             }
                         )
@@ -496,7 +496,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                             color = Color(0xFF2563EB), fontSize = 11.sp)
                                     else ->
                                         Text("Ingresa el RUT sin puntos ni guión",
-                                            color = Color(0xFF9CA3AF), fontSize = 11.sp)
+                                            color = Color(0xFF6B7280), fontSize = 11.sp)
                                 }
                             }
                         )
@@ -578,7 +578,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                 }
                             } else if (observacionesMenor.isEmpty()) {
                                 Text("No hay observaciones registradas aún.",
-                                    fontSize = 13.sp, color = Color(0xFF9CA3AF),
+                                    fontSize = 13.sp, color = Color(0xFF6B7280),
                                     modifier = Modifier.padding(vertical = 8.dp))
                             } else {
                                 observacionesMenor.forEach { obs ->
@@ -723,7 +723,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                     Text("Correo válido ✓", color = Color(0xFF059669), fontSize = 11.sp)
                                 else ->
                                     Text("Se abrirá tu aplicación de correo al generar el enlace",
-                                        color = Color(0xFF9CA3AF), fontSize = 11.sp)
+                                        color = Color(0xFF6B7280), fontSize = 11.sp)
                             }
                         }
                     )
@@ -761,7 +761,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     "Solo puede existir un enlace activo por hijo a la vez.",
-                    fontSize = 12.sp, color = Color(0xFF9CA3AF),
+                    fontSize = 12.sp, color = Color(0xFF6B7280),
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(20.dp))
@@ -838,7 +838,7 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                             fontFamily = FontFamily.Monospace)
                         Text(
                             if (expirado) "Enlace expirado" else "tiempo restante",
-                            fontSize = 12.sp, color = Color(0xFF9CA3AF),
+                            fontSize = 12.sp, color = Color(0xFF6B7280),
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }

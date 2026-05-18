@@ -137,7 +137,7 @@ fun DelegadoScreen(navController: NavController, menorId: String = "") {
             if (delegados.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay delegados registrados.", fontSize = 14.sp, color = Color(0xFF9CA3AF))
+                        Text("No hay delegados registrados.", fontSize = 14.sp, color = Color(0xFF6B7280))
                     }
                 }
             }
@@ -171,7 +171,7 @@ fun DelegadoScreen(navController: NavController, menorId: String = "") {
                             Text(delegado.emailDelegado.orEmpty(), fontSize = 12.sp, color = Color(0xFF6B7280),
                                 modifier = Modifier.padding(top = 2.dp))
                             delegado.duracion?.takeIf { it.isNotEmpty() }?.let {
-                                Text("Acceso: $it", fontSize = 12.sp, color = Color(0xFF9CA3AF))
+                                Text("Acceso: $it", fontSize = 12.sp, color = Color(0xFF6B7280))
                             }
                             delegado.fechaExpiracion?.takeIf { it.isNotEmpty() }?.let {
                                 Text("Vence: $it", fontSize = 12.sp, color = Color(0xFFD97706))

@@ -25,6 +25,7 @@ import com.example.kidcare.data.SessionManager
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.LoginRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -112,10 +113,7 @@ fun LoginScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare,
-                            unfocusedBorderColor = Color(0xFFE5E7EB)
-                        )
+                        colors = campoColores()
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -141,10 +139,7 @@ fun LoginScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare,
-                            unfocusedBorderColor = Color(0xFFE5E7EB)
-                        )
+                        colors = campoColores()
                     )
 
                     TextButton(onClick = { navController.navigate(Rutas.RECUPERAR_CONTRASENA) }) {
@@ -216,7 +211,7 @@ fun LoginScreen(navController: NavController) {
                     Text(
                         text = "¿no tienes cuenta?",
                         fontSize = 12.sp,
-                        color = Color(0xFF9CA3AF),
+                        color = Color(0xFF6B7280),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -241,7 +236,7 @@ fun LoginScreen(navController: NavController) {
                     Text(
                         text = "¿Recibiste una invitación?",
                         fontSize = 12.sp,
-                        color = Color(0xFF9CA3AF),
+                        color = Color(0xFF6B7280),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )

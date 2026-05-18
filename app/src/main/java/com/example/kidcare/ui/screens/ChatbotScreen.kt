@@ -24,6 +24,7 @@ import com.example.kidcare.data.model.MensajeChatRequest
 import com.example.kidcare.data.model.MensajeHistorial
 import com.example.kidcare.data.model.PreguntasRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 private fun limpiaTextoIA(raw: String): String {
@@ -257,12 +258,7 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
                                 placeholder = { Text("Escribe tu respuesta…", fontSize = 13.sp, color = Color(0xFF9CA3AF)) },
                                 modifier = Modifier.weight(1f).height(50.dp),
                                 shape = RoundedCornerShape(25.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFFE5E7EB),
-                                    unfocusedBorderColor = Color(0xFFE5E7EB),
-                                    focusedContainerColor = fondoChat,
-                                    unfocusedContainerColor = fondoChat
-                                )
+                                colors = campoColores()
                             )
                             Button(
                                 onClick = {
@@ -338,8 +334,7 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
                             placeholder = { Text("Describe cuándo comenzó, intensidad, etc.", color = Color(0xFF9CA3AF)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp), minLines = 5,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                            colors = campoColores()
                         )
                     }
                     Row(modifier = Modifier.fillMaxWidth().background(Color.White).padding(16.dp),
@@ -368,8 +363,7 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
                         onValueChange = { textoRefinado = it },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp), minLines = 5,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                        colors = campoColores()
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))

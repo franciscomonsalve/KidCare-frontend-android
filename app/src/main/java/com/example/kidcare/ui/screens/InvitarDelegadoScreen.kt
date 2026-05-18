@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.InvitacionRequest
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -82,7 +83,7 @@ fun InvitarDelegadoScreen(navController: NavController, menorId: String = "") {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = azulKidCare)
+                    colors = campoColores()
                 )
 
                 SeccionTituloDelegado("TIEMPO DE ACCESO")
@@ -220,6 +221,6 @@ fun ItemPermiso(texto: String, habilitado: Boolean, colorIcono: Color) {
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(text = texto, fontSize = 13.sp,
-            color = if (habilitado) Color(0xFF374151) else Color(0xFF9CA3AF))
+            color = if (habilitado) Color(0xFF374151) else Color(0xFF6B7280))
     }
 }

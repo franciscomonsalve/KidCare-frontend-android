@@ -100,8 +100,8 @@ fun HistorialListaScreen(navController: NavController, menorId: String = "") {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("📄", fontSize = 48.sp)
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("Aún no hay resúmenes generados.", fontSize = 14.sp, color = Color(0xFF9CA3AF))
-                            Text("Toca el botón + para generar el primero.", fontSize = 13.sp, color = Color(0xFF9CA3AF))
+                            Text("Aún no hay resúmenes generados.", fontSize = 14.sp, color = Color(0xFF6B7280))
+                            Text("Toca el botón + para generar el primero.", fontSize = 13.sp, color = Color(0xFF6B7280))
                         }
                     }
                 }
@@ -156,7 +156,7 @@ fun HistorialListaScreen(navController: NavController, menorId: String = "") {
                                         color = Color(0xFF6B7280), lineHeight = 18.sp)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Toca para cerrar ▲", fontSize = 11.sp, color = Color(0xFF9CA3AF))
+                                Text("Toca para cerrar ▲", fontSize = 11.sp, color = Color(0xFF6B7280))
                             } else {
                                 Text(
                                     resumenTexto.take(200) + if (resumenTexto.length > 200) "..." else "",

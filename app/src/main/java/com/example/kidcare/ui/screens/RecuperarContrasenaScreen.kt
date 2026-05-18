@@ -24,6 +24,7 @@ import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.RecuperarRequest
 import com.example.kidcare.data.model.RestablecerRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -169,8 +170,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                        colors = campoColores()
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -190,8 +190,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp), singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                        colors = campoColores()
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -211,8 +210,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp), singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB))
+                        colors = campoColores()
                     )
 
                     if (confirmarNueva.isNotBlank() && contrasenaNueva != confirmarNueva) {
@@ -286,9 +284,7 @@ fun RecuperarContrasenaScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp), singleLine = true,
                         isError = correoError,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB),
-                            errorBorderColor = Color(0xFFDC2626))
+                        colors = campoColores()
                     )
 
                     if (correoError) {

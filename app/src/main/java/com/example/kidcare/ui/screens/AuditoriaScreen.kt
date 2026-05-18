@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.AuditoriaResponse
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -105,7 +106,7 @@ fun AuditoriaScreen(navController: NavController) {
                         placeholder = { Text("Cambio", fontSize = 12.sp, color = Color(0xFF9CA3AF)) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp), singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = azulKidCare)
+                        colors = campoColores()
                     )
                     OutlinedTextField(
                         value = filtroEntidad,
@@ -113,7 +114,7 @@ fun AuditoriaScreen(navController: NavController) {
                         placeholder = { Text("Entidad", fontSize = 12.sp, color = Color(0xFF9CA3AF)) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp), singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = azulKidCare)
+                        colors = campoColores()
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -143,7 +144,7 @@ fun AuditoriaScreen(navController: NavController) {
             if (registros.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay registros de auditoría.", fontSize = 14.sp, color = Color(0xFF9CA3AF))
+                        Text("No hay registros de auditoría.", fontSize = 14.sp, color = Color(0xFF6B7280))
                     }
                 }
             }
@@ -169,7 +170,7 @@ fun AuditoriaScreen(navController: NavController) {
                             Text("Admin: ${registro.emailAdmin.orEmpty()}", fontSize = 12.sp, color = Color(0xFF6B7280))
                             Text("Entidad: ${registro.entidad.orEmpty()} #${registro.idEntidad ?: "-"}",
                                 fontSize = 12.sp, color = Color(0xFF6B7280))
-                            Text(registro.fecha.orEmpty(), fontSize = 11.sp, color = Color(0xFF9CA3AF),
+                            Text(registro.fecha.orEmpty(), fontSize = 11.sp, color = Color(0xFF6B7280),
                                 modifier = Modifier.padding(top = 2.dp))
                         }
                     }

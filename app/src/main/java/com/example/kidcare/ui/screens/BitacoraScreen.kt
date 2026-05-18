@@ -225,7 +225,7 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
             if (interacciones.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay observaciones registradas.", fontSize = 14.sp, color = Color(0xFF9CA3AF))
+                        Text("No hay observaciones registradas.", fontSize = 14.sp, color = Color(0xFF6B7280))
                     }
                 }
             }

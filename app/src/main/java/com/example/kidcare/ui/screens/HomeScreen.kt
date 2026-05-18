@@ -190,7 +190,7 @@ fun HomeScreen(navController: NavController) {
                                 Text("Ver bitácora", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
                                     color = Color(0xFF0F172A))
                                 Text("Todas las observaciones", fontSize = 11.sp,
-                                    color = Color(0xFF9CA3AF), modifier = Modifier.padding(top = 2.dp))
+                                    color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                             }
                         }
                         Box(
@@ -205,7 +205,7 @@ fun HomeScreen(navController: NavController) {
                                 Text("Compartir\ncon médico", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
                                     color = Color(0xFF0F172A), lineHeight = 18.sp)
                                 Text("Enlace temporal", fontSize = 11.sp,
-                                    color = Color(0xFF9CA3AF), modifier = Modifier.padding(top = 2.dp))
+                                    color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                             }
                         }
                         Box(
@@ -220,7 +220,7 @@ fun HomeScreen(navController: NavController) {
                                 Text("Delegados", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
                                     color = Color(0xFF0F172A))
                                 Text("Gestionar accesos", fontSize = 11.sp,
-                                    color = Color(0xFF9CA3AF), modifier = Modifier.padding(top = 2.dp))
+                                    color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                             }
                         }
                     }
@@ -240,7 +240,7 @@ fun HomeScreen(navController: NavController) {
                             Text("Historial médico", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFF0F172A))
                             Text("Resúmenes generados para el médico", fontSize = 11.sp,
-                                color = Color(0xFF9CA3AF), modifier = Modifier.padding(top = 2.dp))
+                                color = Color(0xFF6B7280), modifier = Modifier.padding(top = 2.dp))
                         }
                     }
                 }
@@ -288,7 +288,7 @@ fun HomeScreen(navController: NavController) {
                         Text("👶", fontSize = 48.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("Agrega tu primer menor para comenzar", fontSize = 14.sp,
-                            color = Color(0xFF9CA3AF))
+                            color = Color(0xFF6B7280))
                     }
                 }
             }

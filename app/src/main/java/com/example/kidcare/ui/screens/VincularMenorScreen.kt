@@ -21,6 +21,7 @@ import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.MenorResponse
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -122,9 +123,7 @@ fun VincularMenorScreen(navController: NavController) {
                     shape = RoundedCornerShape(12.dp), singleLine = true,
                     isError = errorMsg.isNotEmpty(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = azulKidCare, unfocusedBorderColor = Color(0xFFE5E7EB),
-                        errorBorderColor = Color(0xFFDC2626))
+                    colors = campoColores()
                 )
 
                 if (errorMsg.isNotEmpty()) {
