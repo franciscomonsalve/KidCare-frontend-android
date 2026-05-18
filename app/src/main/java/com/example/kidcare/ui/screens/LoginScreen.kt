@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -229,6 +230,34 @@ fun LoginScreen(navController: NavController) {
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = azulKidCare)
                     ) {
                         Text("Crear cuenta", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    HorizontalDivider(color = Color(0xFFE5E7EB))
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "¿Recibiste una invitación?",
+                        fontSize = 12.sp,
+                        color = Color(0xFF9CA3AF),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = { navController.navigate(Rutas.REGISTRO_DELEGADO) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Completar registro con token de invitación",
+                            fontSize = 13.sp,
+                            color = azulKidCare,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }

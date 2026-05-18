@@ -102,6 +102,8 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             GenerarHistorialScreen(navController, menorId)
         }
 
+        composable(Rutas.REGISTRO_DELEGADO) { CompletarRegistroDelegadoScreen(navController) }
+
         composable(Rutas.CONFIGURACION) { PerfilScreen(navController) }
         composable(Rutas.CAMBIAR_CONTRASENA) { CambiarContrasenaScreen(navController) }
         composable(Rutas.RECUPERAR_CONTRASENA) { RecuperarContrasenaScreen(navController) }

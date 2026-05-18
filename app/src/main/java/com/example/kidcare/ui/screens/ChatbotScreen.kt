@@ -26,6 +26,42 @@ import com.example.kidcare.data.model.PreguntasRequest
 import com.example.kidcare.navigation.Rutas
 import kotlinx.coroutines.launch
 
+private fun limpiaTextoIA(raw: String): String {
+    var s = raw.trim()
+    // Quitar bloques de código markdown: ```json\n...\n```
+    if (s.startsWith("```")) {
+        val nl = s.indexOf('\n')
+        if (nl >= 0) s = s.substring(nl + 1).trim()
+        if (s.endsWith("```")) s = s.dropLast(3).trim()
+    }
+    // Si el modelo responde con JSON objeto {"respuesta": "..."}
+    if (s.startsWith("{")) try {
+        val obj = org.json.JSONObject(s)
+        val r = obj.optString("respuesta")
+        if (r.isNotBlank()) return r
+        val c = obj.optString("content")
+        if (c.isNotBlank()) return c
+    } catch (e: Exception) { /* no era JSON válido, usar s */ }
+    return s
+}
+
+private fun limpiaListaPreguntas(lista: List<String>): List<String> {
+    if (lista.size != 1) return lista
+    var s = lista[0].trim()
+    // Quitar bloque markdown si lo hay
+    if (s.startsWith("```")) {
+        val nl = s.indexOf('\n')
+        if (nl >= 0) s = s.substring(nl + 1).trim()
+        if (s.endsWith("```")) s = s.dropLast(3).trim()
+    }
+    // Si el único elemento es un array JSON, expandirlo
+    if (!s.startsWith("[")) return lista
+    return try {
+        val arr = org.json.JSONArray(s)
+        (0 until arr.length()).map { arr.getString(it) }
+    } catch (e: Exception) { lista }
+}
+
 @Composable
 fun ChatbotScreen(navController: NavController, menorId: String = "") {
 
@@ -60,7 +96,7 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
         }
         result.onSuccess { resp ->
             if (resp.isSuccessful) {
-                preguntas = resp.body()?.preguntas ?: emptyList()
+                preguntas = limpiaListaPreguntas(resp.body()?.preguntas ?: emptyList())
                 hayConexionIA = true
             } else {
                 // Fallback a preguntas predefinidas
@@ -254,7 +290,7 @@ fun ChatbotScreen(navController: NavController, menorId: String = "") {
                                             }
                                             result.onSuccess { resp ->
                                                 val texto = if (resp.isSuccessful)
-                                                    resp.body()?.respuesta ?: "¿Puedes contarme más detalles?"
+                                                    resp.body()?.respuesta?.let { limpiaTextoIA(it) } ?: "¿Puedes contarme más detalles?"
                                                 else "¿Puedes contarme más detalles?"
                                                 chatMessages.add(texto to true)
                                             }.onFailure {

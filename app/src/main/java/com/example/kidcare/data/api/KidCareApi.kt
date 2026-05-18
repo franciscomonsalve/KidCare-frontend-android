@@ -46,6 +46,9 @@ interface KidCareApi {
     @POST("api/invitaciones/enviar")
     suspend fun enviarInvitacion(@Body body: InvitacionRequest): Response<MessageResponse>
 
+    @POST("api/invitaciones/completar")
+    suspend fun completarRegistroDelegado(@Body body: CompletarRegistroRequest): Response<MessageResponse>
+
     // ─── ADMIN ────────────────────────────────────────────────────────────────
     @GET("api/admin/usuarios")
     suspend fun listarUsuarios(): Response<List<AdminUsuarioResponse>>

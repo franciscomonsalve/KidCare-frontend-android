@@ -6,6 +6,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import android.net.Uri
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -65,6 +70,14 @@ private suspend fun obtenerCoordenadas(client: FusedLocationProviderClient): Pai
             .addOnFailureListener { cont.resume(null) }
         cont.invokeOnCancellation { cts.cancel() }
     }
+
+private fun guardarQrEnCache(context: android.content.Context, bitmap: Bitmap): Uri? {
+    return try {
+        val file = File(context.cacheDir, "kidcare_qr.png")
+        FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    } catch (e: Exception) { null }
+}
 
 private fun generarQrBitmap(texto: String, size: Int = 512): Bitmap? {
     return try {
@@ -129,9 +142,9 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
 
     val enlaceGenerado = tokenGenerado != null
 
-    // QR bitmap generado una sola vez cuando se crea el token
-    val qrBitmap = remember(tokenGenerado?.token) {
-        tokenGenerado?.token?.let { generarQrBitmap(it) }
+    // QR bitmap generado una sola vez cuando se crea el token (codifica la URL completa)
+    val qrBitmap = remember(tokenGenerado?.urlAcceso) {
+        (tokenGenerado?.urlAcceso ?: tokenGenerado?.token)?.let { generarQrBitmap(it) }
     }
 
     LaunchedEffect(idMenor) {
@@ -190,9 +203,11 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
             if (resp.isSuccessful) {
                 tokenGenerado = resp.body()
                 segundos = 20 * 60
-                // Si canal EMAIL: abrir cliente de correo con el token
+                // Si canal EMAIL: adjuntar QR como imagen + enlace en el cuerpo
                 if (canalSeleccionado == "EMAIL" && emailMedicoInput.isNotBlank()) {
-                    val token = resp.body()?.token ?: ""
+                    val enlace = resp.body()?.urlAcceso ?: resp.body()?.token ?: ""
+                    val qr    = generarQrBitmap(enlace)
+                    val qrUri = qr?.let { guardarQrEnCache(context, it) }
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "message/rfc822"
                         putExtra(Intent.EXTRA_EMAIL, arrayOf(emailMedicoInput.trim()))
@@ -200,10 +215,15 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                         putExtra(
                             Intent.EXTRA_TEXT,
                             "Se ha generado un acceso temporal al historial médico.\n\n" +
-                            "Token de acceso: $token\n\n" +
-                            "Este token es válido por 20 minutos y solo puede usarse una vez.\n" +
-                            "El acceso requiere verificación de proximidad GPS."
+                            "Enlace de acceso: $enlace\n\n" +
+                            "Este enlace es válido por 20 minutos y solo puede usarse una vez.\n" +
+                            "El acceso requiere verificación de proximidad GPS.\n\n" +
+                            "El código QR está adjunto a este correo."
                         )
+                        if (qrUri != null) {
+                            putExtra(Intent.EXTRA_STREAM, qrUri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
                     }
                     context.startActivity(Intent.createChooser(intent, "Enviar por correo"))
                 }
@@ -762,9 +782,11 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-                        if (canalSeleccionado == "QR" && qrBitmap != null) {
-                            // ─── Mostrar QR ───────────────────────────────────
-                            Text("Muestra este código QR al médico",
+                        // Mostrar QR en ambos canales si está disponible
+                        if (qrBitmap != null) {
+                            Text(
+                                if (canalSeleccionado == "EMAIL") "QR adjunto al correo del médico"
+                                else "Muestra este código QR al médico",
                                 fontSize = 13.sp, color = Color(0xFF6B7280),
                                 modifier = Modifier.padding(bottom = 16.dp))
                             Image(
@@ -773,13 +795,9 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                 modifier = Modifier.size(220.dp)
                             )
                         } else {
-                            // ─── Mostrar token como texto (canal EMAIL o sin QR) ─
-                            Text(
-                                if (canalSeleccionado == "EMAIL") "Token enviado al correo del médico"
-                                else "Muestra este token al médico",
+                            Text("Muestra este token al médico",
                                 fontSize = 13.sp, color = Color(0xFF6B7280),
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
+                                modifier = Modifier.padding(bottom = 16.dp))
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -793,6 +811,24 @@ fun EnlaceScreen(navController: NavController, menorId: String = "") {
                                     color = Color(0xFF374151), textAlign = TextAlign.Center,
                                     lineHeight = 22.sp)
                             }
+                        }
+
+                        // Enlace "Click aquí" debajo del QR
+                        val urlAcceso = tokenGenerado?.urlAcceso ?: tokenGenerado?.token ?: ""
+                        if (urlAcceso.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = "Click aquí",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = azulKidCare,
+                                textDecoration = TextDecoration.Underline,
+                                modifier = Modifier.clickable {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_VIEW, Uri.parse(urlAcceso))
+                                    )
+                                }
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))

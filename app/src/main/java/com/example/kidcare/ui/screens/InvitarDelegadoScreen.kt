@@ -172,7 +172,12 @@ fun InvitarDelegadoScreen(navController: NavController, menorId: String = "") {
                                     snackbarHostState.showSnackbar("Invitación enviada a $correoDelegado")
                                     navController.popBackStack()
                                 } else {
-                                    errorMsg = "No se pudo enviar. Verifica el correo o intenta de nuevo."
+                                    errorMsg = try {
+                                        val json = org.json.JSONObject(resp.errorBody()?.string() ?: "")
+                                        json.optString("error", "No se pudo enviar. Intenta de nuevo.")
+                                    } catch (e: Exception) {
+                                        "No se pudo enviar. Verifica el correo o intenta de nuevo."
+                                    }
                                 }
                             }.onFailure { errorMsg = "Error de conexión." }
                             cargando = false

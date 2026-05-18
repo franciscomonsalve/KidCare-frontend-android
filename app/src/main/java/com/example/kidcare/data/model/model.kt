@@ -50,6 +50,12 @@ data class InvitacionRequest(
     val duracion: String? = null
 )
 
+data class CompletarRegistroRequest(
+    val token: String,
+    val nombreCompleto: String,
+    val password: String
+)
+
 data class DelegadoAccesoResponse(
     val idAcceso: Int = 0,
     val idDelegado: Int = 0,
