@@ -10,6 +10,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.reflect.Type
+import java.util.concurrent.TimeUnit
 
 // Convierte cualquier null de String en JSON a "" para no romper Text() en Compose
 private object NullStringAdapter : JsonDeserializer<String> {
@@ -39,6 +40,9 @@ object RetrofitClient {
     private fun buildClient(): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .addInterceptor(authInterceptor)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private fun buildRetrofit(baseUrl: String): Retrofit = Retrofit.Builder()
@@ -47,23 +51,23 @@ object RetrofitClient {
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
-    // MS Usuario — :8081
+    // MS Usuario — Railway (HTTPS 443, sin puerto explícito)
     val api: KidCareApi by lazy {
-        buildRetrofit("http://10.0.2.2:8081/").create(KidCareApi::class.java)
+        buildRetrofit("https://kidcareusuariobackend-production.up.railway.app/").create(KidCareApi::class.java)
     }
 
-    // MS Acceso — :8082
+    // MS Acceso — Railway
     val accesoApi: AccesoApi by lazy {
-        buildRetrofit("http://10.0.2.2:8082/").create(AccesoApi::class.java)
+        buildRetrofit("https://kidcareaccesobackend-production.up.railway.app/").create(AccesoApi::class.java)
     }
 
-    // MS Chatbot — :8083
+    // MS Chatbot — Railway
     val chatbotApi: ChatbotApi by lazy {
-        buildRetrofit("http://10.0.2.2:8083/").create(ChatbotApi::class.java)
+        buildRetrofit("https://kidcarechatbotbackend-production.up.railway.app/").create(ChatbotApi::class.java)
     }
 
-    // MS Historial — :8084
+    // MS Historial — Railway
     val historialApi: HistorialApi by lazy {
-        buildRetrofit("http://10.0.2.2:8084/").create(HistorialApi::class.java)
+        buildRetrofit("https://kidcarehistorialbackend-production.up.railway.app/").create(HistorialApi::class.java)
     }
 }
