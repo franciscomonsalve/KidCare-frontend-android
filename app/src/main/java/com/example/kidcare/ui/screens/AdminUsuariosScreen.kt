@@ -1,18 +1,23 @@
 package com.example.kidcare.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -21,9 +26,17 @@ import com.example.kidcare.data.model.AdminUsuarioResponse
 import com.example.kidcare.data.model.CambiarRolRequest
 import com.example.kidcare.data.model.CrearUsuarioAdminRequest
 import com.example.kidcare.data.model.EditarUsuarioAdminRequest
+import com.example.kidcare.data.AuditoriaLocal
 import com.example.kidcare.navigation.Rutas
 import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
+
+private fun fechaAdminParaApi(fecha: String): String {
+    val partes = fecha.trim().split("/")
+    if (partes.size != 3) return fecha
+    val (dia, mes, anio) = partes
+    return "${anio.padStart(4,'0')}-${mes.padStart(2,'0')}-${dia.padStart(2,'0')}"
+}
 
 @Composable
 fun AdminUsuariosScreen(navController: NavController) {
@@ -36,7 +49,7 @@ fun AdminUsuariosScreen(navController: NavController) {
     var errorMsg by remember { mutableStateOf("") }
     val usuarios = remember { mutableStateListOf<AdminUsuarioResponse>() }
 
-    val roles = listOf("TUTOR" to 1, "DELEGADO" to 2, "ADMIN" to 3)
+    val roles = listOf("TUTOR" to 2, "ADMIN" to 1)
 
     var usuarioAccion         by remember { mutableStateOf<AdminUsuarioResponse?>(null) }
     var mostrarRolDialog      by remember { mutableStateOf(false) }
@@ -44,14 +57,25 @@ fun AdminUsuariosScreen(navController: NavController) {
     var mostrarEditarDialog   by remember { mutableStateOf(false) }
     var mostrarEliminarDialog by remember { mutableStateOf(false) }
 
-    var nombreNuevo   by remember { mutableStateOf("") }
-    var emailNuevo    by remember { mutableStateOf("") }
-    var passwordNuevo by remember { mutableStateOf("") }
-    var idRolNuevo    by remember { mutableStateOf(1) }
+    var nombreNuevo      by remember { mutableStateOf("") }
+    var emailNuevo       by remember { mutableStateOf("") }
+    var passwordNuevo    by remember { mutableStateOf("") }
+    var idRolNuevo       by remember { mutableStateOf(2) }
+    var errorCrearMsg    by remember { mutableStateOf("") }
 
     var nombreEditar by remember { mutableStateOf("") }
     var emailEditar  by remember { mutableStateOf("") }
     var idRolEditar  by remember { mutableStateOf(1) }
+
+    var mostrarCrearMenorDialog by remember { mutableStateOf(false) }
+    var usuarioParaMenor        by remember { mutableStateOf<AdminUsuarioResponse?>(null) }
+    var nombreNuevoMenor        by remember { mutableStateOf("") }
+    var fechaNuevoMenor         by remember { mutableStateOf(TextFieldValue("")) }
+    var sexoNuevoMenor          by remember { mutableStateOf("M") }
+    var emojiNuevoMenor         by remember { mutableStateOf("🧒") }
+    var errorMenorMsg           by remember { mutableStateOf("") }
+    val sexos   = listOf("M" to "Masculino", "F" to "Femenino")
+    val emojis  = listOf("👧", "👦", "🧒", "👶")
 
     LaunchedEffect(Unit) {
         cargando = true
@@ -76,12 +100,14 @@ fun AdminUsuariosScreen(navController: NavController) {
                     roles.forEach { (nombre, idRol) ->
                         TextButton(onClick = {
                             val id = usuarioAccion!!.idUsuario
+                            val emailU = usuarioAccion!!.email.orEmpty()
                             scope.launch {
                                 runCatching { RetrofitClient.api.cambiarRol(id, CambiarRolRequest(idRol)) }
                                     .onSuccess { resp ->
                                         if (resp.isSuccessful) {
                                             val idx = usuarios.indexOfFirst { it.idUsuario == id }
                                             if (idx >= 0) usuarios[idx] = usuarios[idx].copy(rol = nombre)
+                                            AuditoriaLocal.registrar("MODIFICAR_ROL", "USUARIO", "Email: $emailU → $nombre")
                                         }
                                     }
                             }
@@ -115,12 +141,20 @@ fun AdminUsuariosScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp), colors = campoColores()
                     )
                     OutlinedTextField(
-                        value = passwordNuevo, onValueChange = { passwordNuevo = it },
+                        value = passwordNuevo, onValueChange = { passwordNuevo = it; errorCrearMsg = "" },
                         label = { Text("Contraseña") }, singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp), colors = campoColores()
                     )
+                    Text(
+                        "La contraseña debe tener al menos 8 caracteres, una letra mayúscula y un símbolo especial (ej: Admin@2024!)",
+                        fontSize = 11.sp, color = Color(0xFF6B7280),
+                        lineHeight = 15.sp
+                    )
+                    if (errorCrearMsg.isNotEmpty()) {
+                        Text(errorCrearMsg, fontSize = 12.sp, color = Color(0xFFDC2626))
+                    }
                     Text("ROL", fontSize = 11.sp, fontWeight = FontWeight.Bold,
                         color = Color(0xFF6B7280), letterSpacing = 0.6.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -144,9 +178,17 @@ fun AdminUsuariosScreen(navController: NavController) {
                             runCatching {
                                 RetrofitClient.api.crearUsuarioAdmin(
                                     CrearUsuarioAdminRequest(nombreNuevo, emailNuevo, passwordNuevo, idRolNuevo))
-                            }.onSuccess { resp -> if (resp.isSuccessful) resp.body()?.let { usuarios.add(it) } }
-                            mostrarCrearDialog = false
-                            nombreNuevo = ""; emailNuevo = ""; passwordNuevo = ""; idRolNuevo = 1
+                            }.onSuccess { resp ->
+                                if (resp.isSuccessful) {
+                                    resp.body()?.let { usuarios.add(it) }
+                                    AuditoriaLocal.registrar("CREAR", "USUARIO", "Email: $emailNuevo")
+                                    mostrarCrearDialog = false
+                                    nombreNuevo = ""; emailNuevo = ""; passwordNuevo = ""; idRolNuevo = 2
+                                    errorCrearMsg = ""
+                                } else {
+                                    errorCrearMsg = "Error: verifica que el email no esté en uso y la contraseña cumpla los requisitos."
+                                }
+                            }.onFailure { errorCrearMsg = "Error de conexión con el servidor." }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
@@ -155,7 +197,7 @@ fun AdminUsuariosScreen(navController: NavController) {
             dismissButton = {
                 TextButton(onClick = {
                     mostrarCrearDialog = false
-                    nombreNuevo = ""; emailNuevo = ""; passwordNuevo = ""; idRolNuevo = 1
+                    nombreNuevo = ""; emailNuevo = ""; passwordNuevo = ""; idRolNuevo = 2; errorCrearMsg = ""
                 }) { Text("Cancelar") }
             }
         )
@@ -211,6 +253,7 @@ fun AdminUsuariosScreen(navController: NavController) {
                                     if (idx >= 0) usuarios[idx] = usuarios[idx].copy(
                                         nombreCompleto = nombreEditar, email = emailEditar,
                                         rol = rolNombre ?: usuarios[idx].rol)
+                                    AuditoriaLocal.registrar("EDITAR", "USUARIO", "Email: $emailEditar")
                                 }
                             }
                             mostrarEditarDialog = false
@@ -235,9 +278,15 @@ fun AdminUsuariosScreen(navController: NavController) {
                 TextButton(
                     onClick = {
                         val id = usuarioAccion!!.idUsuario
+                        val emailEliminado = usuarioAccion!!.email.orEmpty()
                         scope.launch {
                             runCatching { RetrofitClient.api.eliminarUsuarioAdmin(id) }
-                                .onSuccess { resp -> if (resp.isSuccessful) usuarios.removeIf { it.idUsuario == id } }
+                                .onSuccess { resp ->
+                                    if (resp.isSuccessful) {
+                                        usuarios.removeIf { it.idUsuario == id }
+                                        AuditoriaLocal.registrar("ELIMINAR", "USUARIO", "Email: $emailEliminado")
+                                    }
+                                }
                             mostrarEliminarDialog = false
                         }
                     },
@@ -245,6 +294,133 @@ fun AdminUsuariosScreen(navController: NavController) {
                 ) { Text("Eliminar", fontWeight = FontWeight.Bold) }
             },
             dismissButton = { TextButton(onClick = { mostrarEliminarDialog = false }) { Text("Cancelar") } }
+        )
+    }
+
+    // Dialog: crear menor para un usuario específico
+    if (mostrarCrearMenorDialog && usuarioParaMenor != null) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarCrearMenorDialog = false
+                nombreNuevoMenor = ""; fechaNuevoMenor = TextFieldValue("")
+                sexoNuevoMenor = "M"; emojiNuevoMenor = "🧒"; errorMenorMsg = ""
+            },
+            title = { Text("Crear menor para\n${usuarioParaMenor!!.nombreCompleto.orEmpty()}", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Selector de emoji
+                    Text("ÍCONO", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280), letterSpacing = 0.6.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        emojis.forEach { emoji ->
+                            val seleccionado = emoji == emojiNuevoMenor
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .then(
+                                        if (seleccionado)
+                                            Modifier.border(2.dp, azulKidCare, RoundedCornerShape(12.dp))
+                                        else Modifier
+                                    )
+                                    .background(
+                                        if (seleccionado) Color(0xFFDBEAFE) else Color(0xFFF3F4F6),
+                                        shape = RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                TextButton(onClick = { emojiNuevoMenor = emoji },
+                                    contentPadding = PaddingValues(0.dp)) {
+                                    Text(emoji, fontSize = 26.sp)
+                                }
+                            }
+                        }
+                    }
+                    // Nombre
+                    OutlinedTextField(
+                        value = nombreNuevoMenor, onValueChange = { nombreNuevoMenor = it; errorMenorMsg = "" },
+                        label = { Text("Nombre del menor") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores()
+                    )
+                    // Fecha con auto-formato DD/MM/AAAA
+                    OutlinedTextField(
+                        value = fechaNuevoMenor,
+                        onValueChange = { input ->
+                            val digits = input.text.filter { it.isDigit() }.take(8)
+                            val formatted = buildString {
+                                digits.forEachIndexed { i, c ->
+                                    if (i == 2 || i == 4) append('/')
+                                    append(c)
+                                }
+                            }
+                            errorMenorMsg = ""
+                            fechaNuevoMenor = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+                        },
+                        label = { Text("Fecha nacimiento") },
+                        placeholder = { Text("DD/MM/AAAA", color = Color(0xFF9CA3AF)) },
+                        singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                    // Sexo
+                    Text("SEXO", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280), letterSpacing = 0.6.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        sexos.forEach { (codigo, etiqueta) ->
+                            FilterChip(
+                                selected = sexoNuevoMenor == codigo,
+                                onClick = { sexoNuevoMenor = codigo },
+                                label = { Text(etiqueta, fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFEFF6FF),
+                                    selectedLabelColor = azulKidCare)
+                            )
+                        }
+                    }
+                    if (errorMenorMsg.isNotEmpty()) {
+                        Text(errorMenorMsg, fontSize = 12.sp, color = Color(0xFFDC2626))
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val fechaTexto = fechaNuevoMenor.text
+                        if (nombreNuevoMenor.isBlank() || fechaTexto.length < 10) {
+                            errorMenorMsg = "Nombre y fecha completa (DD/MM/AAAA) son obligatorios."
+                            return@Button
+                        }
+                        val idUsuario = usuarioParaMenor!!.idUsuario
+                        val nombreUsuario = usuarioParaMenor!!.nombreCompleto.orEmpty()
+                        scope.launch {
+                            runCatching {
+                                RetrofitClient.api.crearMenorParaUsuario(
+                                    idUsuario,
+                                    com.example.kidcare.data.model.MenorRequest(
+                                        nombreNuevoMenor, fechaAdminParaApi(fechaTexto),
+                                        sexoNuevoMenor, emojiNuevoMenor))
+                            }.onSuccess { resp ->
+                                if (resp.isSuccessful) {
+                                    AuditoriaLocal.registrar("CREAR", "MENOR",
+                                        "Nombre: $nombreNuevoMenor → Usuario: $nombreUsuario")
+                                    mostrarCrearMenorDialog = false
+                                    nombreNuevoMenor = ""; fechaNuevoMenor = TextFieldValue("")
+                                    sexoNuevoMenor = "M"; emojiNuevoMenor = "🧒"; errorMenorMsg = ""
+                                } else {
+                                    errorMenorMsg = "Error al crear el menor. Verifica los datos."
+                                }
+                            }.onFailure { errorMenorMsg = "Error de conexión." }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+                ) { Text("Crear") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    mostrarCrearMenorDialog = false
+                    nombreNuevoMenor = ""; fechaNuevoMenor = TextFieldValue("")
+                    sexoNuevoMenor = "M"; emojiNuevoMenor = "🧒"; errorMenorMsg = ""
+                }) { Text("Cancelar") }
+            }
         )
     }
 
@@ -279,17 +455,10 @@ fun AdminUsuariosScreen(navController: NavController) {
             ) {
                 Button(
                     onClick = { mostrarCrearDialog = true },
-                    modifier = Modifier.weight(1f).height(44.dp),
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
                 ) { Text("+ Crear usuario", fontSize = 13.sp) }
-
-                Button(
-                    onClick = { navController.navigate(Rutas.ADMIN_MENORES) },
-                    modifier = Modifier.weight(1f).height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = azulOscuro)
-                ) { Text("Ver menores", fontSize = 13.sp) }
             }
         }
 
@@ -363,12 +532,14 @@ fun AdminUsuariosScreen(navController: NavController) {
                                 onClick = {
                                     scope.launch {
                                         val id = usuario.idUsuario
+                                        val emailU = usuario.email.orEmpty()
                                         if (usuario.activo) {
                                             runCatching { RetrofitClient.api.deshabilitarUsuario(id) }
                                                 .onSuccess { resp ->
                                                     if (resp.isSuccessful) {
                                                         val idx = usuarios.indexOfFirst { it.idUsuario == id }
                                                         if (idx >= 0) usuarios[idx] = usuarios[idx].copy(activo = false)
+                                                        AuditoriaLocal.registrar("DESHABILITAR", "USUARIO", "Email: $emailU")
                                                     }
                                                 }
                                         } else {
@@ -377,6 +548,7 @@ fun AdminUsuariosScreen(navController: NavController) {
                                                     if (resp.isSuccessful) {
                                                         val idx = usuarios.indexOfFirst { it.idUsuario == id }
                                                         if (idx >= 0) usuarios[idx] = usuarios[idx].copy(activo = true)
+                                                        AuditoriaLocal.registrar("HABILITAR", "USUARIO", "Email: $emailU")
                                                     }
                                                 }
                                         }
@@ -418,6 +590,18 @@ fun AdminUsuariosScreen(navController: NavController) {
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626))
                             ) { Text("Eliminar", fontSize = 12.sp) }
                         }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Fila 3: crear menor
+                        OutlinedButton(
+                            onClick = {
+                                usuarioParaMenor = usuario
+                                mostrarCrearMenorDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF0891B2))
+                        ) { Text("+ Crear menor", fontSize = 12.sp) }
                     }
                 }
             }

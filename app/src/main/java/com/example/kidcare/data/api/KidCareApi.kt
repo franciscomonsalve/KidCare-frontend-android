@@ -88,6 +88,12 @@ interface KidCareApi {
     @DELETE("api/admin/menores/{id}")
     suspend fun eliminarMenorAdmin(@Path("id") id: Int): Response<MessageResponse>
 
+    @POST("api/admin/usuarios/{idUsuario}/menores")
+    suspend fun crearMenorParaUsuario(
+        @Path("idUsuario") idUsuario: Int,
+        @Body body: MenorRequest
+    ): Response<MenorResponse>
+
     @POST("api/admin/menores/{idMenor}/vincular/{idUsuario}")
     suspend fun vincularUsuarioMenorAdmin(
         @Path("idMenor") idMenor: Int,

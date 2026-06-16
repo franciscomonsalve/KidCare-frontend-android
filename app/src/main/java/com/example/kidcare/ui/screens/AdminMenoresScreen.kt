@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.kidcare.data.AuditoriaLocal
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.MenorRequest
 import com.example.kidcare.data.model.MenorResponse
@@ -113,6 +114,7 @@ fun AdminMenoresScreen(navController: NavController) {
                                     if (idx >= 0) menores[idx] = menores[idx].copy(
                                         nombre = nombreEditar, fechaNacimiento = fechaEditar,
                                         sexo = sexoEditar, emoji = emojiEditar.ifBlank { null })
+                                    AuditoriaLocal.registrar("EDITAR", "MENOR", "Nombre: $nombreEditar")
                                 }
                             }
                             mostrarEditarDialog = false
@@ -137,9 +139,15 @@ fun AdminMenoresScreen(navController: NavController) {
                 TextButton(
                     onClick = {
                         val id = menorAccion!!.idMenor
+                        val nombreMenor = menorAccion!!.nombre.orEmpty()
                         scope.launch {
                             runCatching { RetrofitClient.api.eliminarMenorAdmin(id) }
-                                .onSuccess { resp -> if (resp.isSuccessful) menores.removeIf { it.idMenor == id } }
+                                .onSuccess { resp ->
+                                    if (resp.isSuccessful) {
+                                        menores.removeIf { it.idMenor == id }
+                                        AuditoriaLocal.registrar("ELIMINAR", "MENOR", "Nombre: $nombreMenor")
+                                    }
+                                }
                             mostrarEliminarDialog = false
                         }
                     },
@@ -172,8 +180,14 @@ fun AdminMenoresScreen(navController: NavController) {
                     onClick = {
                         val idUsuario = idUsuarioVincular.toIntOrNull() ?: return@Button
                         val idMenor = menorAccion!!.idMenor
+                        val nombreMenor = menorAccion!!.nombre.orEmpty()
                         scope.launch {
                             runCatching { RetrofitClient.api.vincularUsuarioMenorAdmin(idMenor, idUsuario) }
+                                .onSuccess { resp ->
+                                    if (resp.isSuccessful)
+                                        AuditoriaLocal.registrar("VINCULAR", "USUARIO_MENOR",
+                                            "Menor: $nombreMenor → Usuario #$idUsuario")
+                                }
                             mostrarVincularDialog = false; idUsuarioVincular = ""
                         }
                     },

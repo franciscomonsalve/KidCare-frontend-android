@@ -33,13 +33,18 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
     val context     = LocalContext.current
     val session     = remember { SessionManager(context) }
 
-    val idMenorInt  = menorId.toIntOrNull()
-    val menorInfo   = remember(menorId) { session.getMenores().find { it.idMenor == idMenorInt } }
-    val nombreMenor = menorInfo?.nombre.orEmpty().ifEmpty { "Menor" }
-    val emojiMenor  = menorInfo?.emoji ?: "🧒"
+    val todosLosMenores = remember { session.getMenores() }
+
+    var idMenorActual by remember { mutableStateOf(menorId.toIntOrNull() ?: 0) }
+    val menorInfo    = todosLosMenores.find { it.idMenor == idMenorActual }
+    val nombreMenor  = menorInfo?.nombre.orEmpty().ifEmpty { "Menor" }
+    val emojiMenor   = menorInfo?.emoji ?: "🧒"
 
     var cargando    by remember { mutableStateOf(false) }
     var errorMsg    by remember { mutableStateOf("") }
+
+    // Diálogo cambiar menor
+    var mostrarCambiarMenor by remember { mutableStateOf(false) }
 
     // Diálogo editar
     var mostrarEditar      by remember { mutableStateOf(false) }
@@ -52,8 +57,9 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
 
     val interacciones = remember { mutableStateListOf<InteraccionResponse>() }
 
-    LaunchedEffect(menorId) {
-        val id = menorId.toIntOrNull() ?: return@LaunchedEffect
+    LaunchedEffect(idMenorActual) {
+        val id = idMenorActual.takeIf { it > 0 } ?: return@LaunchedEffect
+        interacciones.clear()
         cargando = true
         val result = runCatching { RetrofitClient.chatbotApi.listarInteracciones(id) }
         result.onSuccess { resp ->
@@ -63,6 +69,46 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
             } else { errorMsg = "No se pudieron cargar las observaciones." }
         }.onFailure { errorMsg = "Error de conexión." }
         cargando = false
+    }
+
+    // Diálogo cambiar menor
+    if (mostrarCambiarMenor && todosLosMenores.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { mostrarCambiarMenor = false },
+            title = { Text("Cambiar menor", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Selecciona el menor:", fontSize = 13.sp, color = Color(0xFF6B7280))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    todosLosMenores.forEach { m ->
+                        val seleccionado = m.idMenor == idMenorActual
+                        TextButton(
+                            onClick = {
+                                if (m.idMenor != null) idMenorActual = m.idMenor
+                                mostrarCambiarMenor = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Start,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(m.emoji ?: "🧒", fontSize = 20.sp, modifier = Modifier.padding(end = 10.dp))
+                                Text(
+                                    m.nombre.orEmpty(),
+                                    fontSize = 15.sp,
+                                    fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (seleccionado) azulKidCare else Color(0xFF0F172A)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { mostrarCambiarMenor = false }) { Text("Cancelar") } }
+        )
     }
 
     // Diálogo editar
@@ -144,20 +190,31 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                     TextButton(onClick = { navController.popBackStack() },
                         colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.8f))
                     ) { Text("← Volver", fontSize = 14.sp) }
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 8.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .background(Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(10.dp)),
-                            contentAlignment = Alignment.Center
-                        ) { Text(emojiMenor, fontSize = 20.sp) }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text("Bitácora de $nombreMenor", fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("${interacciones.size} observaciones registradas", fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(top = 2.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .background(Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) { Text(emojiMenor, fontSize = 20.sp) }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("Bitácora de $nombreMenor", fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("${interacciones.size} observaciones", fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(top = 2.dp))
+                            }
+                        }
+                        if (todosLosMenores.size > 1) {
+                            TextButton(
+                                onClick = { mostrarCambiarMenor = true },
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.85f))
+                            ) { Text("Cambiar ↕", fontSize = 12.sp) }
                         }
                     }
                 }
@@ -190,7 +247,7 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Button(
-                    onClick = { if (idMenorInt != null) navController.navigate(Rutas.chatbot(idMenorInt)) },
+                    onClick = { if (idMenorActual > 0) navController.navigate(Rutas.chatbot(idMenorActual)) },
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
@@ -198,7 +255,7 @@ fun BitacoraScreen(navController: NavController, menorId: String = "") {
                     Text("💬 Con asistente IA", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
-                    onClick = { if (idMenorInt != null) navController.navigate(Rutas.interaccionManual(idMenorInt)) },
+                    onClick = { if (idMenorActual > 0) navController.navigate(Rutas.interaccionManual(idMenorActual)) },
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
