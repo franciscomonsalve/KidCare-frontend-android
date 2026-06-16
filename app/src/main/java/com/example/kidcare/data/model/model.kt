@@ -155,6 +155,19 @@ data class AdminUsuarioResponse(
 
 data class CambiarRolRequest(val idRol: Int)
 
+data class CrearUsuarioAdminRequest(
+    val nombreCompleto: String,
+    val email: String,
+    val password: String,
+    val idRol: Int
+)
+
+data class EditarUsuarioAdminRequest(
+    val nombreCompleto: String,
+    val email: String,
+    val idRol: Int
+)
+
 data class AuditoriaResponse(
     val idAuditoria: Int = 0,
     val emailAdmin: String? = null,

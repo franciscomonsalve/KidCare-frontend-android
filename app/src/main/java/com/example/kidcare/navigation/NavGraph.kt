@@ -31,6 +31,7 @@ object Rutas {
     const val GENERAR_HISTORIAL   = "generar_historial/{menorId}"
     const val HISTORIAL_LISTA     = "historial_lista/{menorId}"
     const val ADMIN_USUARIOS      = "admin_usuarios"
+    const val ADMIN_MENORES       = "admin_menores"
     const val AUDITORIA           = "auditoria"
 
     fun bitacora(menorId: Int)        = "bitacora/$menorId"
@@ -109,6 +110,7 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         composable(Rutas.RECUPERAR_CONTRASENA) { RecuperarContrasenaScreen(navController) }
 
         composable(Rutas.ADMIN_USUARIOS) { AdminUsuariosScreen(navController) }
+        composable(Rutas.ADMIN_MENORES) { AdminMenoresScreen(navController) }
         composable(Rutas.AUDITORIA) { AuditoriaScreen(navController) }
     }
 }

@@ -69,4 +69,28 @@ interface KidCareApi {
         @Query("desde") desde: String? = null,
         @Query("hasta") hasta: String? = null
     ): Response<List<AuditoriaResponse>>
+
+    @POST("api/admin/usuarios")
+    suspend fun crearUsuarioAdmin(@Body body: CrearUsuarioAdminRequest): Response<AdminUsuarioResponse>
+
+    @PUT("api/admin/usuarios/{id}")
+    suspend fun editarUsuarioAdmin(@Path("id") id: Int, @Body body: EditarUsuarioAdminRequest): Response<AdminUsuarioResponse>
+
+    @DELETE("api/admin/usuarios/{id}")
+    suspend fun eliminarUsuarioAdmin(@Path("id") id: Int): Response<MessageResponse>
+
+    @GET("api/admin/menores")
+    suspend fun listarMenoresAdmin(): Response<List<MenorResponse>>
+
+    @PUT("api/admin/menores/{id}")
+    suspend fun editarMenorAdmin(@Path("id") id: Int, @Body body: MenorRequest): Response<MenorResponse>
+
+    @DELETE("api/admin/menores/{id}")
+    suspend fun eliminarMenorAdmin(@Path("id") id: Int): Response<MessageResponse>
+
+    @POST("api/admin/menores/{idMenor}/vincular/{idUsuario}")
+    suspend fun vincularUsuarioMenorAdmin(
+        @Path("idMenor") idMenor: Int,
+        @Path("idUsuario") idUsuario: Int
+    ): Response<MessageResponse>
 }

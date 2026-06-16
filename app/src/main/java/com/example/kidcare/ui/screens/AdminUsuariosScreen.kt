@@ -12,13 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kidcare.data.api.RetrofitClient
 import com.example.kidcare.data.model.AdminUsuarioResponse
 import com.example.kidcare.data.model.CambiarRolRequest
+import com.example.kidcare.data.model.CrearUsuarioAdminRequest
+import com.example.kidcare.data.model.EditarUsuarioAdminRequest
 import com.example.kidcare.navigation.Rutas
+import com.example.kidcare.ui.theme.campoColores
 import kotlinx.coroutines.launch
 
 @Composable
@@ -32,25 +36,36 @@ fun AdminUsuariosScreen(navController: NavController) {
     var errorMsg by remember { mutableStateOf("") }
     val usuarios = remember { mutableStateListOf<AdminUsuarioResponse>() }
 
-    // Dialogs
-    var usuarioAccion       by remember { mutableStateOf<AdminUsuarioResponse?>(null) }
-    var mostrarRolDialog    by remember { mutableStateOf(false) }
+    val roles = listOf("TUTOR" to 1, "DELEGADO" to 2, "ADMIN" to 3)
+
+    var usuarioAccion         by remember { mutableStateOf<AdminUsuarioResponse?>(null) }
+    var mostrarRolDialog      by remember { mutableStateOf(false) }
+    var mostrarCrearDialog    by remember { mutableStateOf(false) }
+    var mostrarEditarDialog   by remember { mutableStateOf(false) }
+    var mostrarEliminarDialog by remember { mutableStateOf(false) }
+
+    var nombreNuevo   by remember { mutableStateOf("") }
+    var emailNuevo    by remember { mutableStateOf("") }
+    var passwordNuevo by remember { mutableStateOf("") }
+    var idRolNuevo    by remember { mutableStateOf(1) }
+
+    var nombreEditar by remember { mutableStateOf("") }
+    var emailEditar  by remember { mutableStateOf("") }
+    var idRolEditar  by remember { mutableStateOf(1) }
 
     LaunchedEffect(Unit) {
         cargando = true
-        val result = runCatching { RetrofitClient.api.listarUsuarios() }
-        result.onSuccess { resp ->
-            if (resp.isSuccessful) {
-                usuarios.clear()
-                usuarios.addAll(resp.body() ?: emptyList())
-            } else { errorMsg = "No se pudo cargar la lista de usuarios." }
-        }.onFailure { errorMsg = "Error de conexión." }
+        runCatching { RetrofitClient.api.listarUsuarios() }
+            .onSuccess { resp ->
+                if (resp.isSuccessful) {
+                    usuarios.clear(); usuarios.addAll(resp.body() ?: emptyList())
+                } else { errorMsg = "No se pudo cargar la lista de usuarios." }
+            }.onFailure { errorMsg = "Error de conexión." }
         cargando = false
     }
 
-    // Dialog cambiar rol
+    // Dialog: cambiar rol
     if (mostrarRolDialog && usuarioAccion != null) {
-        val roles = listOf("TUTOR" to 1, "DELEGADO" to 2, "ADMIN" to 3)
         AlertDialog(
             onDismissRequest = { mostrarRolDialog = false },
             title = { Text("Cambiar rol", fontWeight = FontWeight.Bold) },
@@ -76,15 +91,166 @@ fun AdminUsuariosScreen(navController: NavController) {
                 }
             },
             confirmButton = {},
+            dismissButton = { TextButton(onClick = { mostrarRolDialog = false }) { Text("Cancelar") } }
+        )
+    }
+
+    // Dialog: crear usuario
+    if (mostrarCrearDialog) {
+        AlertDialog(
+            onDismissRequest = { mostrarCrearDialog = false },
+            title = { Text("Crear usuario", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = nombreNuevo, onValueChange = { nombreNuevo = it },
+                        label = { Text("Nombre completo") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores()
+                    )
+                    OutlinedTextField(
+                        value = emailNuevo, onValueChange = { emailNuevo = it },
+                        label = { Text("Email") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores()
+                    )
+                    OutlinedTextField(
+                        value = passwordNuevo, onValueChange = { passwordNuevo = it },
+                        label = { Text("Contraseña") }, singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores()
+                    )
+                    Text("ROL", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280), letterSpacing = 0.6.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        roles.forEach { (nombre, id) ->
+                            FilterChip(
+                                selected = idRolNuevo == id, onClick = { idRolNuevo = id },
+                                label = { Text(nombre, fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFEFF6FF),
+                                    selectedLabelColor = azulKidCare)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (nombreNuevo.isBlank() || emailNuevo.isBlank() || passwordNuevo.isBlank()) return@Button
+                        scope.launch {
+                            runCatching {
+                                RetrofitClient.api.crearUsuarioAdmin(
+                                    CrearUsuarioAdminRequest(nombreNuevo, emailNuevo, passwordNuevo, idRolNuevo))
+                            }.onSuccess { resp -> if (resp.isSuccessful) resp.body()?.let { usuarios.add(it) } }
+                            mostrarCrearDialog = false
+                            nombreNuevo = ""; emailNuevo = ""; passwordNuevo = ""; idRolNuevo = 1
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+                ) { Text("Crear") }
+            },
             dismissButton = {
-                TextButton(onClick = { mostrarRolDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = {
+                    mostrarCrearDialog = false
+                    nombreNuevo = ""; emailNuevo = ""; passwordNuevo = ""; idRolNuevo = 1
+                }) { Text("Cancelar") }
             }
+        )
+    }
+
+    // Dialog: editar usuario
+    if (mostrarEditarDialog && usuarioAccion != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarEditarDialog = false },
+            title = { Text("Editar usuario", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = nombreEditar, onValueChange = { nombreEditar = it },
+                        label = { Text("Nombre completo") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores()
+                    )
+                    OutlinedTextField(
+                        value = emailEditar, onValueChange = { emailEditar = it },
+                        label = { Text("Email") }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), colors = campoColores()
+                    )
+                    Text("ROL", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6B7280), letterSpacing = 0.6.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        roles.forEach { (nombre, id) ->
+                            FilterChip(
+                                selected = idRolEditar == id, onClick = { idRolEditar = id },
+                                label = { Text(nombre, fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFEFF6FF),
+                                    selectedLabelColor = azulKidCare)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (nombreEditar.isBlank() || emailEditar.isBlank()) return@Button
+                        val id = usuarioAccion!!.idUsuario
+                        scope.launch {
+                            runCatching {
+                                RetrofitClient.api.editarUsuarioAdmin(id,
+                                    EditarUsuarioAdminRequest(nombreEditar, emailEditar, idRolEditar))
+                            }.onSuccess { resp ->
+                                if (resp.isSuccessful) {
+                                    val rolNombre = roles.find { it.second == idRolEditar }?.first
+                                    val idx = usuarios.indexOfFirst { it.idUsuario == id }
+                                    if (idx >= 0) usuarios[idx] = usuarios[idx].copy(
+                                        nombreCompleto = nombreEditar, email = emailEditar,
+                                        rol = rolNombre ?: usuarios[idx].rol)
+                                }
+                            }
+                            mostrarEditarDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+                ) { Text("Guardar") }
+            },
+            dismissButton = { TextButton(onClick = { mostrarEditarDialog = false }) { Text("Cancelar") } }
+        )
+    }
+
+    // Dialog: confirmar eliminación
+    if (mostrarEliminarDialog && usuarioAccion != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarEliminarDialog = false },
+            title = { Text("Eliminar usuario", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("¿Eliminar a ${usuarioAccion!!.nombreCompleto.orEmpty()}? Esta acción es permanente e irrecuperable. Se eliminarán también sus menores huérfanos.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = usuarioAccion!!.idUsuario
+                        scope.launch {
+                            runCatching { RetrofitClient.api.eliminarUsuarioAdmin(id) }
+                                .onSuccess { resp -> if (resp.isSuccessful) usuarios.removeIf { it.idUsuario == id } }
+                            mostrarEliminarDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFDC2626))
+                ) { Text("Eliminar", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { mostrarEliminarDialog = false }) { Text("Cancelar") } }
         )
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize().background(Color(0xFFF2F5FB))) {
 
-        // Header
+        // Header — gradiente estándar de la app
         item {
             Box(
                 modifier = Modifier
@@ -99,18 +265,40 @@ fun AdminUsuariosScreen(navController: NavController) {
                     Text("Panel Admin — Usuarios", fontSize = 22.sp, fontWeight = FontWeight.Bold,
                         color = Color.White, modifier = Modifier.padding(start = 8.dp))
                     Text("${usuarios.size} usuarios registrados", fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(start = 8.dp, top = 4.dp))
+                        color = Color.White.copy(alpha = 0.65f),
+                        modifier = Modifier.padding(start = 8.dp, top = 4.dp))
                 }
             }
         }
 
-        // Botón auditoría
+        // Acciones principales
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { mostrarCrearDialog = true },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = azulKidCare)
+                ) { Text("+ Crear usuario", fontSize = 13.sp) }
+
+                Button(
+                    onClick = { navController.navigate(Rutas.ADMIN_MENORES) },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = azulOscuro)
+                ) { Text("Ver menores", fontSize = 13.sp) }
+            }
+        }
+
         item {
             Button(
                 onClick = { navController.navigate(Rutas.AUDITORIA) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).height(44.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(44.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0891B2))
             ) { Text("📋 Ver auditoría", fontSize = 14.sp) }
         }
 
@@ -121,7 +309,10 @@ fun AdminUsuariosScreen(navController: NavController) {
                 }
             }
         } else if (errorMsg.isNotEmpty()) {
-            item { Text(errorMsg, fontSize = 13.sp, color = Color(0xFFDC2626), modifier = Modifier.padding(16.dp)) }
+            item {
+                Text(errorMsg, fontSize = 13.sp, color = Color(0xFFDC2626),
+                    modifier = Modifier.padding(16.dp))
+            }
         } else {
             item {
                 Text("USUARIOS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
@@ -138,28 +329,36 @@ fun AdminUsuariosScreen(navController: NavController) {
                         .padding(16.dp)
                 ) {
                     Column {
-                        Row(modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(usuario.nombreCompleto.orEmpty(), fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A))
+                                Text(usuario.nombreCompleto.orEmpty(), fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                 Text(usuario.email.orEmpty(), fontSize = 12.sp, color = Color(0xFF6B7280))
+                                Text("Rol: ${usuario.rol.orEmpty()}", fontSize = 11.sp,
+                                    color = azulKidCare, modifier = Modifier.padding(top = 2.dp))
                             }
-                            Box(modifier = Modifier
-                                .background(
-                                    if (usuario.activo) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
-                                    shape = RoundedCornerShape(20.dp))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)) {
-                                Text(if (usuario.activo) "ACTIVO" else "INACTIVO", fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        if (usuario.activo) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
+                                        shape = RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    if (usuario.activo) "ACTIVO" else "INACTIVO",
+                                    fontSize = 10.sp, fontWeight = FontWeight.Bold,
                                     color = if (usuario.activo) Color(0xFF059669) else Color(0xFFDC2626))
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
+                        // Fila 1: habilitar/deshabilitar + cambiar rol
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Habilitar / Deshabilitar
                             OutlinedButton(
                                 onClick = {
                                     scope.launch {
@@ -189,13 +388,35 @@ fun AdminUsuariosScreen(navController: NavController) {
                                     contentColor = if (usuario.activo) Color(0xFFDC2626) else Color(0xFF059669))
                             ) { Text(if (usuario.activo) "Deshabilitar" else "Habilitar", fontSize = 12.sp) }
 
-                            // Cambiar rol
                             OutlinedButton(
                                 onClick = { usuarioAccion = usuario; mostrarRolDialog = true },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = azulKidCare)
-                            ) { Text("Rol: ${usuario.rol.orEmpty()}", fontSize = 12.sp) }
+                            ) { Text("Cambiar rol", fontSize = 12.sp) }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Fila 2: editar + eliminar
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    usuarioAccion = usuario
+                                    nombreEditar = usuario.nombreCompleto.orEmpty()
+                                    emailEditar  = usuario.email.orEmpty()
+                                    idRolEditar  = roles.find { it.first == usuario.rol }?.second ?: 1
+                                    mostrarEditarDialog = true
+                                },
+                                modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF0F172A))
+                            ) { Text("Editar", fontSize = 12.sp) }
+
+                            OutlinedButton(
+                                onClick = { usuarioAccion = usuario; mostrarEliminarDialog = true },
+                                modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626))
+                            ) { Text("Eliminar", fontSize = 12.sp) }
                         }
                     }
                 }
