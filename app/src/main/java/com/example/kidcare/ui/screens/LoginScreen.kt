@@ -185,7 +185,14 @@ fun LoginScreen(navController: NavController) {
                                         ) { popUpTo(Rutas.LOGIN) { inclusive = true } }
                                     }
                                 }.onFailure { e ->
-                                    errorMsg = e.message ?: "Error al iniciar sesión"
+                                    val msg = e.message ?: ""
+                                    errorMsg = when {
+                                        msg.contains("CUENTA_ELIMINADA") ->
+                                            "Tu cuenta fue eliminada por incumplir las normas de uso de KidCare. Contacta al administrador para más información."
+                                        msg.contains("CUENTA_DESHABILITADA") ->
+                                            "Tu cuenta ha sido temporalmente deshabilitada por infringir las normas de uso de KidCare. Contacta al administrador para reactivarla."
+                                        else -> "Correo o contraseña incorrectos"
+                                    }
                                 }
                                 cargando = false
                             }
