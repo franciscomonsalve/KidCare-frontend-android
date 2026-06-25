@@ -51,23 +51,23 @@ object RetrofitClient {
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
-    // MS Usuario — Railway (HTTPS 443, sin puerto explícito)
+    // MS Usuario — local (emulador usa 10.0.2.2 para llegar al localhost de la PC)
     val api: KidCareApi by lazy {
-        buildRetrofit("https://kidcareusuariobackend-production.up.railway.app/").create(KidCareApi::class.java)
+        buildRetrofit("http://10.0.2.2:8081/").create(KidCareApi::class.java)
     }
 
-    // MS Acceso — Railway
+    // MS Acceso — local
     val accesoApi: AccesoApi by lazy {
-        buildRetrofit("https://kidcareaccesobackend-production.up.railway.app/").create(AccesoApi::class.java)
+        buildRetrofit("http://10.0.2.2:8082/").create(AccesoApi::class.java)
     }
 
-    // MS Chatbot — Railway
+    // MS Chatbot — local
     val chatbotApi: ChatbotApi by lazy {
-        buildRetrofit("https://kidcarechatbotbackend-production.up.railway.app/").create(ChatbotApi::class.java)
+        buildRetrofit("http://10.0.2.2:8083/").create(ChatbotApi::class.java)
     }
 
-    // MS Historial — Railway
+    // MS Historial — local
     val historialApi: HistorialApi by lazy {
-        buildRetrofit("https://kidcarehistorialbackend-production.up.railway.app/").create(HistorialApi::class.java)
+        buildRetrofit("http://10.0.2.2:8084/").create(HistorialApi::class.java)
     }
 }
